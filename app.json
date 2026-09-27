@@ -1,0 +1,77 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/home-new/home-new",
+    "pages/buy-card/buy-card",
+    "pages/map/map",
+    "pages/mine/mine",
+    "pages/messages/messages",
+    "pages/message-detail/message-detail",
+    "pages/wash-records/wash-records",
+    "pages/recharge-records/recharge-records",
+    "pages/my-cards/my-cards",
+    "pages/balance/balance",
+    "pages/coupons/coupons",
+    "pages/webview/webview",
+    "pages/scan/scan",
+    "pages/wash-confirm/wash-confirm",
+    "pages/wash-ready/wash-ready",
+    "pages/device-control/device-control",
+    "pages/washing/washing",
+    "pages/wash-finish/wash-finish"
+  ],
+  "entryPagePath": "pages/home/home",
+  "window": {
+    "backgroundColor": "#216fe9",
+    "backgroundTextStyle": "light",
+    "navigationBarTitleText": "泡泡洗车",
+    "navigationBarBackgroundColor": "#216fe9",
+    "navigationBarTextStyle": "white"
+  },
+  "permission": {
+    "scope.camera": {
+      "desc": "用于扫描洗车机二维码"
+    },
+    "scope.userLocation": {
+      "desc": "用于查询附近洗车点和校验扫码位置"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation"
+  ],
+  "style": "v2",
+  "useExtendedLib": {
+    "weui": true
+  },
+  "usingComponents": {
+    "phone-auth": "/components/phone-auth/phone-auth"
+  },
+  "tabBar": {
+    "color": "#b2b7c2",
+    "selectedColor": "#111111",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "洗车",
+        "iconPath": "assets/tabbar/wash.png",
+        "selectedIconPath": "assets/tabbar/wash-active.png"
+      },
+      {
+        "pagePath": "pages/map/map",
+        "text": "附近洗车点",
+        "iconPath": "assets/tabbar/map.png",
+        "selectedIconPath": "assets/tabbar/map-active.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "assets/tabbar/mine.png",
+        "selectedIconPath": "assets/tabbar/mine-active.png"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

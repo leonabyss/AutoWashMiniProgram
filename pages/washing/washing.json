@@ -1,0 +1,8 @@
+{
+  "disableSwipeBack": false,
+  "navigationBarTitleText": "洗车中",
+  "navigationBarBackgroundColor": "#FFFFFF",
+  "navigationBarTextStyle": "black",
+  "disableScroll": true,
+  "usingComponents": {}
+}

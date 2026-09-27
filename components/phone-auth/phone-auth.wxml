@@ -1,0 +1,18 @@
+<view wx:if="{{visible}}" class="auth-mask" catchtouchmove="noop">
+  <view class="auth-dialog">
+    <view class="auth-icon">
+      <view class="auth-icon-ring"></view>
+      <view class="auth-icon-phone"></view>
+    </view>
+    <view class="auth-title">{{title}}</view>
+    <view class="auth-desc">{{desc}}</view>
+    <button
+      class="weui-btn auth-primary"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="onGetPhoneNumber"
+      loading="{{loading}}"
+      disabled="{{loading}}"
+    >微信手机号一键登录</button>
+    <button class="weui-btn auth-cancel" bindtap="onCancel" disabled="{{loading}}">暂不登录</button>
+  </view>
+</view>

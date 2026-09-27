@@ -1,0 +1,13 @@
+<view class="coupon-page">
+  <view class="summary"><view class="summary-number">{{coupons.length}}</view><view class="summary-label">张洗车券</view></view>
+  <view wx:if="{{coupons.length}}" class="coupon-list">
+    <view wx:for="{{coupons}}" wx:key="id" class="coupon-card {{item.status}}">
+      <view class="coupon-mark">券</view>
+      <view class="coupon-info"><view class="coupon-name">{{item.name}}</view><view class="coupon-detail">{{item.detail}}</view><view class="coupon-expire">有效期至 {{item.expire}}</view></view>
+      <view class="coupon-status">{{item.statusText}}</view>
+    </view>
+  </view>
+  <view wx:elif="{{error}}" class="empty"><view>洗车券加载失败</view><button class="retry-btn" bindtap="retry">重新加载</button></view>
+  <view wx:elif="{{!loading}}" class="empty">暂无洗车券</view>
+  <view wx:else class="empty">正在加载...</view>
+</view>

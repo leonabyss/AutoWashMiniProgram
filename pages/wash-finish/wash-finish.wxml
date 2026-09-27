@@ -1,0 +1,142 @@
+<view class="finish-page {{finishSizeClass}}" style="{{finishViewportStyle}}">
+  <view class="progress-strip">
+    <view class="progress-line"></view>
+    <view class="progress-step completed">
+      <view class="progress-dot"><image src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image></view>
+      <text>设备识别</text>
+    </view>
+    <view class="progress-step completed">
+      <view class="progress-dot"><image src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image></view>
+      <text>结算确认</text>
+    </view>
+    <view class="progress-step completed">
+      <view class="progress-dot"><image src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image></view>
+      <text>设备启动</text>
+    </view>
+    <view class="progress-step completed final-step">
+      <view class="progress-dot"><image src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image></view>
+      <text>洗车完成</text>
+    </view>
+  </view>
+
+  <view class="finish-hero">
+    <view class="success-mark {{settlementLoading ? 'loading' : ''}}">
+      <image wx:if="{{!settlementLoading}}" src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image>
+      <view wx:else class="loading-ring"></view>
+    </view>
+    <view class="finish-title">{{settlementLoading ? '正在结算' : '洗车完成'}}</view>
+    <view class="finish-subtitle">{{settlementLoading ? '正在同步本次洗车数据' : '本次服务已结束，感谢您的使用'}}</view>
+  </view>
+
+  <view class="settlement-summary">
+    <view class="summary-item">
+      <text class="summary-label">本次用时</text>
+      <view wx:if="{{settlementLoading}}" class="summary-skeleton"></view>
+      <text wx:else class="summary-value">{{displayTime}}</text>
+    </view>
+    <view class="summary-divider"></view>
+    <view class="summary-item">
+      <text class="summary-label">{{settlementSummary.label}}</text>
+      <view wx:if="{{settlementLoading}}" class="summary-skeleton"></view>
+      <view wx:else class="amount-value {{settlementSummary.tone}}">
+        <text wx:if="{{settlementSummary.prefix}}">{{settlementSummary.prefix}}</text>{{settlementSummary.value}}<text wx:if="{{settlementSummary.unit}}" class="summary-unit">{{settlementSummary.unit}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="order-detail">
+    <view class="detail-row">
+      <image src="/assets/icons/lucide-map-pin-blue.svg" mode="aspectFit"></image>
+      <text class="detail-label">洗车点</text>
+      <text class="detail-value">{{siteName}}</text>
+    </view>
+    <view class="detail-row">
+      <image src="/assets/icons/lucide-qr-code.svg" mode="aspectFit"></image>
+      <text class="detail-label">洗车设备</text>
+      <text class="detail-value">{{machineName}}</text>
+    </view>
+    <view class="detail-row">
+      <image src="/assets/icons/lucide-credit-card.svg" mode="aspectFit"></image>
+      <text class="detail-label">结算方式</text>
+      <text class="detail-value">{{payMethodText}}</text>
+    </view>
+    <view class="detail-row balance-row">
+      <image src="{{remainingSummary.icon}}" mode="aspectFit"></image>
+      <text class="detail-label">{{remainingSummary.label}}</text>
+      <view class="balance-value {{remainingSummary.tone}}">
+        <text wx:if="{{remainingSummary.prefix}}">{{remainingSummary.prefix}}</text>{{remainingSummary.value}}<text wx:if="{{remainingSummary.unit}}" class="remaining-unit">{{remainingSummary.unit}}</text>
+      </view>
+    </view>
+  </view>
+
+  <button class="fault-entry" hover-class="fault-entry-hover" bindtap="reportFault">
+    <image src="/assets/icons/lucide-wrenches-orange.svg" mode="aspectFit"></image>
+    <text>{{faultReported ? '故障已上报' : '本次洗车遇到问题？故障上报'}}</text>
+  </button>
+
+  <view class="finish-bottom">
+    <button class="home-btn" hover-class="home-btn-hover" bindtap="backHome">
+      <image src="/assets/icons/lucide-home-white.svg" mode="aspectFit"></image>
+      <text>返回首页</text>
+    </button>
+  </view>
+
+  <view wx:if="{{faultPanelVisible}}" class="fault-mask" bindtap="closeFaultReport" catchtouchmove="noop">
+    <view class="fault-panel" catchtap="noop">
+      <view class="fault-drag-handle"></view>
+      <view class="fault-header">
+        <view class="fault-heading">
+          <view class="fault-title">故障上报</view>
+          <view class="fault-subtitle">请选择本次洗车过程中遇到的问题</view>
+        </view>
+        <button class="fault-close" hover-class="fault-close-hover" bindtap="closeFaultReport">
+          <image src="/assets/icons/lucide-x-gray.svg" mode="aspectFit"></image>
+        </button>
+      </view>
+
+      <scroll-view class="fault-body" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="fault-options">
+          <view
+            wx:for="{{faultOptions}}"
+            wx:key="key"
+            class="fault-option {{item.active ? 'active' : ''}}"
+            hover-class="fault-option-hover"
+            bindtap="toggleFaultOption"
+            data-key="{{item.key}}"
+          >
+            <text>{{item.label}}</text>
+            <view class="fault-option-mark">
+              <image wx:if="{{item.active}}" src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image>
+            </view>
+          </view>
+        </view>
+
+        <view class="fault-field-title">
+          <text>详细描述</text>
+          <text class="fault-optional">选填</text>
+        </view>
+        <textarea
+          class="fault-textarea"
+          maxlength="1000"
+          placeholder="例如：泡沫按钮无反应，现场没有泡沫喷出"
+          placeholder-class="fault-placeholder"
+          cursor-spacing="24"
+          value="{{faultDesc}}"
+          bindinput="onFaultDescInput"
+        ></textarea>
+        <view class="fault-count">{{faultDesc.length}}/1000</view>
+
+        <view class="fault-note">
+          <image src="/assets/icons/lucide-circle-info-blue.svg" mode="aspectFit"></image>
+          <text>同一订单仅保留首次上报。工作人员会核查故障，退款或补偿以审核处理为准。</text>
+        </view>
+      </scroll-view>
+
+      <view class="fault-footer">
+        <button class="report-btn" loading="{{reporting}}" disabled="{{reporting}}" hover-class="report-btn-hover" bindtap="submitFaultReport">
+          {{reporting ? '正在上报' : '一键上报'}}
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,85 @@
+<view class="ready-page">
+  <view class="progress-strip">
+    <view class="progress-line"></view>
+
+    <view class="progress-step completed">
+      <view class="progress-dot">
+        <image src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image>
+      </view>
+      <text>设备识别</text>
+    </view>
+
+    <view class="progress-step completed">
+      <view class="progress-dot">
+        <image src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image>
+      </view>
+      <text>结算确认</text>
+    </view>
+
+    <view class="progress-step active">
+      <view class="progress-dot"><view class="progress-core"></view></view>
+      <text>设备启动</text>
+    </view>
+
+    <view class="progress-step pending">
+      <view class="progress-dot"></view>
+      <text>洗车中</text>
+    </view>
+  </view>
+
+  <view class="status-strip">
+    <view class="status-pulse"></view>
+    <text>{{statusText}} · 状态每3秒自动更新</text>
+  </view>
+
+  <view class="gun-stage">
+    <image
+      class="gun-panel-image"
+      src="{{controlPanelImageUrl}}"
+      mode="aspectFit"
+    ></image>
+  </view>
+
+  <view class="ready-content">
+    <view class="ready-heading">拿起水枪 开始洗车</view>
+    <view class="ready-subtitle">按下水枪上的功能键，设备将上报实际使用状态</view>
+
+    <view class="instruction-list">
+      <view class="instruction-row">
+        <view class="instruction-icon water-icon-wrap">
+          <image src="/assets/icons/lucide-droplets-blue.svg" mode="aspectFit"></image>
+        </view>
+        <view class="instruction-copy">
+          <text class="instruction-label water-label">冲水 / 泡沫：</text>
+          <text>开始对应功能</text>
+        </view>
+      </view>
+
+      <view class="instruction-row">
+        <view class="instruction-icon stop-icon-wrap">
+          <image src="/assets/icons/lucide-circle-stop-red.svg" mode="aspectFit"></image>
+        </view>
+        <view class="instruction-copy">
+          <text class="instruction-label stop-label">停止：</text>
+          <text>停止当前功能，最终用时以后端记录为准</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="ready-footer">
+    <button
+      class="remote-control-btn"
+      loading="{{remoteStarting}}"
+      disabled="{{remoteStarting}}"
+      hover-class="remote-control-hover"
+      bindtap="openRemoteControl"
+    >
+      <image class="remote-control-icon" src="/assets/icons/lucide-remote-control.svg" mode="aspectFit"></image>
+      <view class="remote-control-copy">
+        <text class="remote-control-title">进入远程控制</text>
+        <text class="remote-control-subtitle">也可以使用手机控制冲水、泡沫和停止</text>
+      </view>
+    </button>
+  </view>
+</view>

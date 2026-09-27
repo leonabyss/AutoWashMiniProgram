@@ -1,0 +1,111 @@
+<view class="scan-page">
+  <view wx:if="{{!canScan && !phoneAuthVisible}}" class="scan-loading">
+    <view class="loading-spinner"></view>
+    <text>正在检查登录状态...</text>
+  </view>
+
+  <block wx:if="{{canScan}}">
+    <view class="scan-toolbar">
+      <view class="scan-heading">
+        <view class="heading-icon-wrap">
+          <image class="heading-icon" src="/assets/icons/lucide-qr-code.svg" mode="aspectFit"></image>
+        </view>
+        <view class="heading-copy">
+          <text class="heading-title">扫描洗车机二维码</text>
+          <text class="heading-subtitle">对准设备上的二维码即可识别</text>
+        </view>
+        <button class="debug-toggle" hover-class="debug-toggle-hover" bindtap="toggleManualPanel">
+          {{manualPanelExpanded ? '收起调试' : '调试输入'}}
+        </button>
+      </view>
+
+      <view wx:if="{{manualPanelExpanded}}" class="manual-row">
+        <input
+          class="manual-input"
+          value="{{manualQrText}}"
+          placeholder="输入二维码信息"
+          placeholder-class="manual-placeholder"
+          confirm-type="send"
+          bindinput="onManualQrInput"
+          bindconfirm="submitManualQr"
+        />
+        <button
+          class="manual-submit"
+          disabled="{{resolving}}"
+          hover-class="manual-submit-hover"
+          bindtap="submitManualQr"
+        >提交</button>
+      </view>
+    </view>
+
+    <camera
+      class="scan-camera"
+      style="top: {{cameraTop}}px; height: {{cameraHeight}}px;"
+      mode="scanCode"
+      device-position="back"
+      flash="{{flashMode}}"
+      bindinitdone="onCameraInit"
+      binderror="onCameraError"
+      bindscancode="onScanCode"
+    ></camera>
+
+    <cover-view class="scan-mask top-mask" style="top: {{cameraTop}}px; height: {{maskTopHeight}}px;"></cover-view>
+    <cover-view class="scan-mask left-mask" style="top: {{frameTop}}px; width: {{frameLeft}}px; height: {{scanSize}}px;"></cover-view>
+    <cover-view class="scan-mask right-mask" style="top: {{frameTop}}px; width: {{frameLeft}}px; height: {{scanSize}}px;"></cover-view>
+    <cover-view class="scan-mask bottom-mask" style="top: {{frameBottom}}px; bottom: {{actionHeight}}px;"></cover-view>
+
+    <cover-view
+      class="scan-frame"
+      style="left: {{frameLeft}}px; top: {{frameTop}}px; width: {{scanSize}}px; height: {{scanSize}}px;"
+    >
+      <cover-view class="frame-edge frame-edge-top"></cover-view>
+      <cover-view class="frame-edge frame-edge-right"></cover-view>
+      <cover-view class="frame-edge frame-edge-bottom"></cover-view>
+      <cover-view class="frame-edge frame-edge-left"></cover-view>
+      <cover-view class="corner left-top"></cover-view>
+      <cover-view class="corner right-top"></cover-view>
+      <cover-view class="corner left-bottom"></cover-view>
+      <cover-view class="corner right-bottom"></cover-view>
+      <cover-view class="alignment-mark alignment-top"></cover-view>
+      <cover-view class="alignment-mark alignment-right"></cover-view>
+      <cover-view class="alignment-mark alignment-bottom"></cover-view>
+      <cover-view class="alignment-mark alignment-left"></cover-view>
+      <cover-view class="scan-line" style="top: {{scanLineTop}}px;"></cover-view>
+    </cover-view>
+
+    <cover-view class="recognition-status" style="top: {{tipTop}}px;">
+      <cover-view class="status-dot"></cover-view>
+      <cover-view class="status-text">正在识别设备</cover-view>
+    </cover-view>
+
+    <cover-view wx:if="{{errorText}}" class="scan-error">
+      <cover-view>{{errorText}}</cover-view>
+    </cover-view>
+
+    <cover-view class="scan-helper">保持手机稳定，识别成功后将自动跳转</cover-view>
+
+    <view class="scan-actions" style="height: {{actionHeight}}px;">
+      <button class="scan-action {{torchOn ? 'is-active' : ''}}" bindtap="toggleTorch">
+        <view class="action-icon-wrap">
+          <image class="action-icon" src="/assets/icons/lucide-flashlight.png" mode="aspectFit"></image>
+        </view>
+        <text class="action-text">{{torchOn ? '关闭手电' : '打开手电'}}</text>
+      </button>
+      <view class="action-divider"></view>
+      <button class="scan-action" bindtap="scanFromAlbum">
+        <view class="action-icon-wrap">
+          <image class="action-icon" src="/assets/icons/lucide-images.png" mode="aspectFit"></image>
+        </view>
+        <text class="action-text">从相册选择</text>
+      </button>
+    </view>
+  </block>
+
+  <phone-auth
+    visible="{{phoneAuthVisible}}"
+    title="微信手机号登录"
+    desc="扫码洗车前需要授权手机号，用于识别会员、余额和当前订单。"
+    bindsuccess="onPhoneAuthSuccess"
+    bindcancel="onPhoneAuthCancel"
+  />
+</view>

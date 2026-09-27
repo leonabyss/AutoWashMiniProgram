@@ -1,0 +1,17 @@
+<view class="asset-page">
+  <view class="balance-hero">
+    <view class="hero-label">当前余额（元）</view>
+    <view class="hero-value">{{balance}}</view>
+    <button class="recharge-btn" bindtap="recharge">去充值</button>
+  </view>
+  <view class="section-title">最近余额明细</view>
+  <view wx:if="{{records.length}}" class="record-list">
+    <view wx:for="{{records}}" wx:key="id" class="record-row">
+      <view><view class="record-title">{{item.title}}</view><view class="record-time">{{item.time}}</view></view>
+      <view class="record-right"><view class="record-amount {{item.amountClass}}">{{item.amount}}</view><view class="record-balance">{{item.balance}}</view></view>
+    </view>
+  </view>
+  <view wx:elif="{{error}}" class="empty"><view>余额信息加载失败</view><button class="retry-btn" bindtap="retry">重新加载</button></view>
+  <view wx:elif="{{!loading}}" class="empty">暂无余额记录</view>
+  <view wx:else class="empty">正在加载...</view>
+</view>

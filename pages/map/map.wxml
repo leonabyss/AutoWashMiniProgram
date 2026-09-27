@@ -1,0 +1,211 @@
+<view class="map-page">
+  <view class="map-filter-panel">
+    <view class="site-search-row">
+      <input
+        class="site-search-input"
+        value="{{siteKeyword}}"
+        placeholder="搜索洗车点名称或地址"
+        confirm-type="search"
+        bindinput="onSiteKeywordInput"
+        bindfocus="onSiteSearchFocus"
+      />
+      <button wx:if="{{siteKeyword}}" class="site-search-clear" bindtap="clearSiteKeyword" aria-label="清空搜索">×</button>
+    </view>
+
+    <view class="region-filter-row">
+      <picker class="region-picker" mode="selector" range="{{cityOptions}}" range-key="cityName" value="{{cityIndex}}" bindchange="onCityChange">
+        <view class="region-picker-value">{{cityOptions[cityIndex].cityName}}</view>
+      </picker>
+      <picker class="region-picker" mode="selector" range="{{districtOptions}}" range-key="districtName" value="{{districtIndex}}" bindchange="onDistrictChange">
+        <view class="region-picker-value">{{districtOptions[districtIndex].districtName}}</view>
+      </picker>
+      <button class="recent-site-button" bindtap="showRecentSites">近期洗过</button>
+    </view>
+
+    <view wx:if="{{searchVisible}}" class="site-search-results">
+      <view class="search-result-header">
+        <text>{{searchTitle}}</text>
+        <text wx:if="{{searchLoading}}">查询中...</text>
+      </view>
+      <button
+        wx:for="{{searchResults}}"
+        wx:key="siteId"
+        class="site-search-result"
+        data-site-id="{{item.siteId}}"
+        bindtap="selectSearchSite"
+      >
+        <view class="search-result-copy">
+          <text class="search-result-name">{{item.name}}</text>
+          <text class="search-result-address">{{item.regionText}} {{item.address}}</text>
+        </view>
+        <view class="search-result-meta">
+          <text>{{item.distanceText}}</text>
+          <text>{{item.availableMachineCount}}台可用</text>
+        </view>
+      </button>
+      <view wx:if="{{!searchLoading && !searchResults.length}}" class="search-result-empty">没有找到符合条件的场地</view>
+    </view>
+
+    <view class="filter-row">
+      <view
+        wx:for="{{filters}}"
+        wx:key="key"
+        class="filter-option {{activeFilter === item.key ? 'active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="changeFilter"
+      >
+        <text>{{item.label}}</text>
+      </view>
+    </view>
+
+    <view class="legend-row">
+      <view class="status-legend">
+        <view wx:for="{{statusLegends}}" wx:key="key" class="legend-item">
+          <view class="legend-dot legend-dot-{{item.key}}"></view>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+      <text class="site-count">{{markers.length}}个场地</text>
+    </view>
+  </view>
+
+  <map
+    id="stationMap"
+    class="station-map"
+    latitude="{{latitude}}"
+    longitude="{{longitude}}"
+    markers="{{markers}}"
+    scale="14"
+    show-location
+    bindtap="closeSiteSearch"
+    bindmarkertap="onMarkerTap"
+    bindregionchange="onRegionChange"
+  >
+    <cover-view class="locate-control" bindtap="moveToCurrentLocation">
+      <cover-image class="locate-icon" src="/assets/icons/lucide-locate-fixed.png"></cover-image>
+    </cover-view>
+  </map>
+
+  <view wx:if="{{loading}}" class="map-loading">正在获取附近洗车点...</view>
+
+  <view wx:if="{{detailVisible && selectedStation}}" class="site-detail-mask" bindtap="closeDetail" catchtouchmove="noop">
+    <view class="site-detail-page" catchtap="noop">
+      <view class="sheet-handle"></view>
+
+      <view class="site-photo-frame">
+        <swiper
+          wx:if="{{selectedStation.imageUrls.length}}"
+          class="site-photo-swiper"
+          current="{{photoIndex}}"
+          indicator-dots="{{selectedStation.imageUrls.length > 1}}"
+          indicator-color="rgba(255, 255, 255, 0.55)"
+          indicator-active-color="#ffffff"
+          bindchange="onSitePhotoChange"
+        >
+          <swiper-item wx:for="{{selectedStation.imageUrls}}" wx:key="*this">
+            <image
+              class="site-photo"
+              src="{{item}}"
+              mode="aspectFill"
+              data-url="{{item}}"
+              bindtap="previewSiteImage"
+              binderror="handleSiteImageError"
+            ></image>
+          </swiper-item>
+        </swiper>
+        <view wx:else class="site-photo-empty">暂无场地图片</view>
+        <button wx:if="{{selectedStation.imageUrls.length}}" class="preview-photo-btn" catchtap="previewSiteImage" aria-label="查看大图">
+          <image class="preview-photo-icon" src="/assets/icons/lucide-expand.svg" mode="aspectFit"></image>
+        </button>
+        <view wx:if="{{selectedStation.imageUrls.length > 1}}" class="photo-count">{{photoIndex + 1}}/{{selectedStation.imageUrls.length}}</view>
+      </view>
+
+      <view class="site-info">
+        <view class="site-title-row">
+          <view class="site-title-copy">
+            <view class="site-title">{{selectedStation.name}}</view>
+            <view class="site-meta-row">
+              <text class="status-badge status-{{selectedStation.statusClass}}">{{selectedStation.statusText}}</text>
+              <text>共 {{selectedStation.total}} 台机器</text>
+              <text class="distance-text">{{selectedStation.distance}}</text>
+            </view>
+          </view>
+          <button class="close-detail" bindtap="closeDetail" aria-label="关闭">
+            <image src="/assets/icons/lucide-x-gray.svg" mode="aspectFit"></image>
+          </button>
+        </view>
+
+        <view class="machine-state-summary">
+          <view class="state-card idle">
+            <text class="state-value">{{selectedStation.idle}}</text>
+            <text>空闲</text>
+          </view>
+          <view class="state-card busy">
+            <text class="state-value">{{selectedStation.busy}}</text>
+            <text>忙碌</text>
+          </view>
+          <view class="state-card maintenance">
+            <text class="state-value">{{selectedStation.maintenance}}</text>
+            <text>维修中</text>
+          </view>
+          <view class="state-card offline">
+            <text class="state-value">{{selectedStation.offline}}</text>
+            <text>停机</text>
+          </view>
+        </view>
+
+        <view wx:if="{{selectedStation.machines.length}}" class="machine-list">
+          <view wx:for="{{selectedStation.machines}}" wx:key="machineId" class="machine-row">
+            <text class="machine-name">{{item.name}}</text>
+            <text class="machine-state {{item.state}}">{{item.stateText}}</text>
+          </view>
+        </view>
+
+        <view class="detail-divider"></view>
+
+        <view class="section-title">支持计费方式</view>
+        <view class="pay-support-grid">
+          <view wx:for="{{selectedStation.paySupports}}" wx:key="key" class="pay-support-item {{item.supported ? 'supported' : 'unsupported'}}">
+            <text>{{item.label}}</text>
+            <text>{{item.supported ? '支持' : '不支持'}}</text>
+          </view>
+        </view>
+
+        <view class="detail-divider"></view>
+
+        <view class="business-row">
+          <text class="section-title">营业时间</text>
+          <text>{{selectedStation.openingText || '24小时'}}</text>
+        </view>
+
+        <button class="address-row" bindtap="navigateStation">
+          <image class="address-icon" src="/assets/icons/lucide-map-pin-blue.svg" mode="aspectFit"></image>
+          <view class="address-copy">
+            <text class="address-label">场地位置</text>
+            <text>{{selectedStation.address}}</text>
+          </view>
+          <text class="nav-arrow">导航</text>
+        </button>
+
+        <view class="detail-footer">
+          <button class="share-site-btn" open-type="share">
+            <image src="/assets/icons/lucide-share-2.svg" mode="aspectFit"></image>
+            <text>分享好友</text>
+          </button>
+          <button class="go-site-btn" bindtap="goStation">
+            <image src="/assets/icons/lucide-map-pin-white.svg" mode="aspectFit"></image>
+            <text>前往洗车点</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <phone-auth
+    visible="{{phoneAuthVisible}}"
+    title="微信手机号登录"
+    desc="扫码洗车前需要授权手机号，用于识别会员、余额和当前订单。"
+    bindsuccess="onPhoneAuthSuccess"
+    bindcancel="onPhoneAuthCancel"
+  />
+</view>

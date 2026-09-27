@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
+  <!-- Remote-control style icon following Lucide line icon conventions. -->
+  <g stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 8h12a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6V14a6 6 0 0 1 6-6Z"/>
+    <path d="M20 16h8"/>
+    <path d="M20 32h8"/>
+    <circle cx="24" cy="24" r="4"/>
+    <path d="M16 4c2.2-1.4 4.9-2 8-2s5.8.6 8 2"/>
+  </g>
+</svg>

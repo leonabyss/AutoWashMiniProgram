@@ -1,0 +1,101 @@
+.list-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background: #f6f8fc;
+}
+
+.record-card {
+  margin-bottom: 22rpx;
+  padding: 28rpx;
+  border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 12rpx 28rpx rgba(14, 40, 80, 0.06);
+}
+
+.record-top,
+.record-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.record-title {
+  flex: 1;
+  min-width: 0;
+  color: #13223a;
+  font-size: 31rpx;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amount {
+  flex: 0 0 auto;
+  font-size: 31rpx;
+  font-weight: 900;
+}
+
+.amount.income {
+  color: #16a34a;
+}
+
+.amount.expense {
+  color: #d92d20;
+}
+
+.record-sub {
+  margin-top: 12rpx;
+  color: #7a879c;
+  font-size: 25rpx;
+}
+
+.record-footer {
+  margin-top: 24rpx;
+  color: #7a879c;
+  font-size: 24rpx;
+}
+
+.loading-text,
+.bottom-tip {
+  padding: 80rpx 0;
+  color: #9aa4b2;
+  font-size: 27rpx;
+  text-align: center;
+}
+
+.empty-state {
+  padding: 180rpx 40rpx 80rpx;
+  color: #9aa4b2;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 112rpx;
+  height: 112rpx;
+  margin: 0 auto 28rpx;
+  border-radius: 50%;
+  color: #16a34a;
+  font-size: 42rpx;
+  font-weight: 900;
+  line-height: 112rpx;
+  background: #ecfdf3;
+}
+
+.empty-title {
+  color: #13223a;
+  font-size: 32rpx;
+  font-weight: 900;
+}
+
+.empty-desc {
+  margin-top: 14rpx;
+  color: #9aa4b2;
+  font-size: 25rpx;
+}
+
+.bottom-tip {
+  padding: 18rpx 0 40rpx;
+}

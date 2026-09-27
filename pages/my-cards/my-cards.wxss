@@ -1,0 +1,215 @@
+.card-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background: #f6f8fc;
+}
+
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin-bottom: 24rpx;
+  padding: 8rpx;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 26rpx rgba(14, 40, 80, 0.06);
+  overflow: hidden;
+}
+
+.tab-slider {
+  position: absolute;
+  left: 8rpx;
+  top: 8rpx;
+  z-index: 0;
+  width: calc((100% - 16rpx) / 3);
+  height: 72rpx;
+  border-radius: 14rpx;
+  background: #edf5ff;
+  transition: transform 220ms ease;
+}
+
+.tab-slider.slider-0 {
+  transform: translateX(0);
+}
+
+.tab-slider.slider-1 {
+  transform: translateX(100%);
+}
+
+.tab-slider.slider-2 {
+  transform: translateX(200%);
+}
+
+.tab-btn {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  height: 72rpx !important;
+  margin: 0 !important;
+  padding: 0 8rpx !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14rpx;
+  color: #667085;
+  font-size: 26rpx;
+  font-weight: 900;
+  line-height: 72rpx;
+  background: transparent;
+  overflow: hidden;
+}
+
+.tab-content {
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+}
+
+.tab-label {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-btn::after {
+  border: 0;
+}
+
+.tab-btn.active {
+  color: #216fe9;
+  background: transparent;
+}
+
+.tab-count {
+  flex: 0 0 auto;
+  min-width: 30rpx;
+  height: 30rpx;
+  padding: 0 8rpx;
+  border-radius: 999rpx;
+  color: inherit;
+  font-size: 20rpx;
+  line-height: 30rpx;
+  background: rgba(33, 111, 233, 0.12);
+}
+
+.wash-card {
+  position: relative;
+  margin-bottom: 24rpx;
+  padding: 30rpx;
+  overflow: hidden;
+  border-radius: 20rpx;
+  color: #7a4d22;
+  background: linear-gradient(135deg, #f8dfaa 0%, #e2bd73 100%);
+  box-shadow: 0 16rpx 34rpx rgba(99, 66, 18, 0.12);
+}
+
+.wash-card.coupon {
+  color: #155eef;
+  background: linear-gradient(135deg, #dbeafe 0%, #eef6ff 100%);
+}
+
+.wash-card.coupon .status-pill {
+  color: #155eef;
+}
+
+.wash-card.disabled,
+.wash-card.expired {
+  color: #667085;
+  background: linear-gradient(135deg, #f2f4f7 0%, #d0d5dd 100%);
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.card-name {
+  font-size: 38rpx;
+  font-weight: 900;
+}
+
+.card-kind {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  opacity: 0.8;
+}
+
+.status-pill {
+  flex: 0 0 auto;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  color: #7a4d22;
+  font-size: 23rpx;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.44);
+}
+
+.status-pill.disabled,
+.status-pill.expired {
+  color: #667085;
+}
+
+.remain-text {
+  margin-top: 36rpx;
+  font-size: 44rpx;
+  font-weight: 900;
+}
+
+.card-meta {
+  margin-top: 28rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.35;
+  opacity: 0.86;
+}
+
+.loading-text {
+  padding: 100rpx 0;
+  color: #9aa4b2;
+  font-size: 27rpx;
+  text-align: center;
+}
+
+.empty-state {
+  padding: 180rpx 40rpx 100rpx;
+  color: #9aa4b2;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 112rpx;
+  height: 112rpx;
+  margin: 0 auto 28rpx;
+  border-radius: 50%;
+  color: #7a4d22;
+  font-size: 42rpx;
+  font-weight: 900;
+  line-height: 112rpx;
+  background: #fff2d5;
+}
+
+.empty-title {
+  color: #13223a;
+  font-size: 32rpx;
+  font-weight: 900;
+}
+
+.empty-desc {
+  margin-top: 14rpx;
+  color: #9aa4b2;
+  font-size: 25rpx;
+}

@@ -1,0 +1,248 @@
+<view class="buy-page">
+  <view class="overview-bar">
+    <view class="overview-item coupon-overview">
+      <image class="overview-icon" src="/assets/icons/lucide-ticket.svg" mode="aspectFit"></image>
+      <text class="overview-label">洗车券剩余</text>
+      <text class="overview-value">{{couponCount}}张</text>
+    </view>
+    <view class="overview-divider"></view>
+    <button
+      class="site-picker"
+      disabled="{{paymentSitesLoading}}"
+      bindtap="openSiteSelector"
+      aria-label="修改办卡场地"
+    >
+      <view class="overview-item site-overview">
+        <image class="overview-icon" src="/assets/icons/lucide-locate-fixed.png" mode="aspectFit"></image>
+        <view class="site-copy">
+          <text class="site-caption">办卡场地</text>
+          <text class="site-name">{{siteTitle}}</text>
+        </view>
+        <image wx:if="{{!paymentSitesLoading}}" class="site-chevron" src="/assets/icons/lucide-chevron-down.svg" mode="aspectFit"></image>
+      </view>
+    </button>
+  </view>
+
+  <view class="category-tabs">
+    <view class="tab-slider" style="transform: translateX({{activeCategoryIndex * 100}}%);"></view>
+    <button
+      wx:for="{{categoryTabs}}"
+      wx:key="key"
+      class="category-tab {{activeCategory === item.key ? 'active' : ''}}"
+      data-category="{{item.key}}"
+      bindtap="switchCategory"
+    >{{item.label}}</button>
+  </view>
+
+  <view class="category-info">
+    <view class="category-title-row">
+      <text class="category-title">{{categoryMeta.title}}</text>
+      <button class="category-rules" bindtap="openRules">相关细则</button>
+    </view>
+    <text class="category-desc">{{categoryMeta.desc}}</text>
+  </view>
+
+  <view
+    class="category-stage"
+    bindtouchstart="onCategoryTouchStart"
+    bindtouchmove="onCategoryTouchMove"
+    bindtouchend="onCategoryTouchEnd"
+    bindtouchcancel="onCategoryTouchCancel"
+  >
+    <view
+      class="category-drag-layer {{categoryDragging ? 'is-dragging' : ''}}"
+      style="transform: translateX({{categoryDragX}}px);"
+    >
+      <view class="category-panel theme-{{activeCategory}} direction-{{switchDirection}} {{categorySwitching ? 'is-leaving' : ''}}">
+      <view wx:if="{{activeProducts.length}}" class="product-list">
+        <button
+          wx:for="{{activeProducts}}"
+          wx:key="productId"
+          class="product-card {{payingId === item.payKey ? 'is-paying' : ''}}"
+          data-id="{{item.productId}}"
+          bindtap="buyActiveProduct"
+        >
+          <view class="product-art-wrap">
+            <image class="product-art" src="{{item.artSrc}}" mode="aspectFill"></image>
+          </view>
+          <view class="product-shade"></view>
+
+          <view class="product-content">
+            <text class="product-name">{{item.name}}</text>
+            <view class="product-price-line">
+              <text class="price-symbol">¥</text>
+              <text class="product-price">{{item.displayPrice}}</text>
+            </view>
+            <text class="product-rights">{{item.rightsText}}</text>
+            <view class="purchase-button">立即购买</view>
+          </view>
+
+          <view wx:if="{{item.badgeImageUrl}}" class="cms-badge image-badge">
+            <image src="{{item.badgeImageUrl}}" mode="heightFix"></image>
+          </view>
+          <text wx:elif="{{item.badgeText}}" class="cms-badge text-badge">{{item.badgeText}}</text>
+        </button>
+      </view>
+
+      <view wx:else class="empty-products">
+        <text>当前暂无可购买套餐</text>
+      </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="preview-section">
+    <view class="preview-title-row">
+      <view class="preview-line"></view>
+      <text>其他套餐</text>
+      <view class="preview-line"></view>
+    </view>
+    <view class="preview-grid">
+      <button
+        wx:for="{{previewCategories}}"
+        wx:key="key"
+        class="preview-card preview-{{item.key}}"
+        data-category="{{item.key}}"
+        bindtap="switchCategory"
+      >
+        <image class="preview-art" src="{{item.artSrc}}" mode="aspectFill"></image>
+        <view class="preview-shade"></view>
+        <view class="preview-copy">
+          <text class="preview-label">{{item.label}}</text>
+          <text class="preview-subtitle">{{item.subtitle}}</text>
+          <text wx:if="{{item.priceText}}" class="preview-price">{{item.priceText}}起</text>
+        </view>
+      </button>
+    </view>
+  </view>
+
+  <button class="rules-toggle" bindtap="toggleRules">
+    <text>相关细则</text>
+    <image
+      class="rules-arrow"
+      src="{{rulesExpanded ? '/assets/icons/lucide-chevron-up.svg' : '/assets/icons/lucide-chevron-down.svg'}}"
+      mode="aspectFit"
+    ></image>
+  </button>
+
+  <view wx:if="{{rulesExpanded}}" id="rules-panel" class="rules-panel">
+    <view class="rule-item">1. 洗车卡全国泡泡洗车点通用；购买多张洗车卡，余额将叠加，有效期将顺延。</view>
+    <view class="rule-item">2. 洗车券限于购买洗车卡所在洗车点内使用，以实际购买订单展示为准。</view>
+    <view class="rule-item">3. 包月会员当日洗车上限30分钟，会员天数或洗车额度消耗完后失效。</view>
+    <view class="rule-item">4. 请在有效期内及时使用洗车卡和洗车券。</view>
+    <view class="rule-item">5. 购买或续费成功后，相应费用不予退还。</view>
+  </view>
+
+  <view wx:if="{{siteSelectorVisible}}" class="site-selector-mask" bindtap="closeSiteSelector" catchtouchmove="noop">
+    <view class="site-selector-sheet" catchtap="noop">
+      <view class="site-selector-handle"></view>
+      <view class="site-selector-header">
+        <view class="site-selector-heading">
+          <text class="site-selector-title">选择办卡场地</text>
+          <text class="site-selector-desc">仅展示已开通微信收款的办卡场地</text>
+        </view>
+        <button class="site-selector-close" bindtap="closeSiteSelector" aria-label="关闭">
+          <image src="/assets/icons/lucide-x-gray.svg" mode="aspectFit"></image>
+        </button>
+      </view>
+
+      <view class="site-selector-search">
+        <input
+          class="site-selector-input"
+          value="{{siteSelectorKeyword}}"
+          placeholder="输入场地名称或地址"
+          confirm-type="search"
+          maxlength="64"
+          bindinput="onSiteSelectorKeywordInput"
+          bindconfirm="submitPaymentSiteSearch"
+        />
+        <button
+          wx:if="{{siteSelectorKeyword}}"
+          class="site-selector-clear"
+          bindtap="clearSiteSelectorKeyword"
+          aria-label="清空搜索"
+        >×</button>
+        <button class="site-selector-submit" bindtap="submitPaymentSiteSearch">搜索</button>
+      </view>
+
+      <view class="site-region-row">
+        <picker
+          class="site-region-picker"
+          mode="selector"
+          range="{{siteCityOptions}}"
+          range-key="cityName"
+          value="{{siteCityIndex}}"
+          bindchange="onSiteSelectorCityChange"
+        >
+          <view class="site-region-value">
+            <text>{{siteCityOptions[siteCityIndex].cityName}}</text>
+            <image src="/assets/icons/lucide-chevron-down.svg" mode="aspectFit"></image>
+          </view>
+        </picker>
+        <picker
+          class="site-region-picker"
+          mode="selector"
+          range="{{siteDistrictOptions}}"
+          range-key="districtName"
+          value="{{siteDistrictIndex}}"
+          bindchange="onSiteSelectorDistrictChange"
+        >
+          <view class="site-region-value">
+            <text>{{siteDistrictOptions[siteDistrictIndex].districtName}}</text>
+            <image src="/assets/icons/lucide-chevron-down.svg" mode="aspectFit"></image>
+          </view>
+        </picker>
+      </view>
+
+      <view class="site-result-summary">
+        <text>可办卡场地</text>
+        <text wx:if="{{!siteSelectorLoading}}">{{siteSelectorResults.length}}个</text>
+        <text wx:else>查询中...</text>
+      </view>
+
+      <scroll-view class="site-selector-results" scroll-y enhanced show-scrollbar="{{false}}">
+        <view wx:if="{{siteSelectorLoading}}" class="site-selector-loading">
+          <view class="site-loading-line wide"></view>
+          <view class="site-loading-line"></view>
+          <view class="site-loading-line wide"></view>
+          <view class="site-loading-line"></view>
+        </view>
+
+        <button
+          wx:for="{{siteSelectorResults}}"
+          wx:key="siteId"
+          class="site-result-item {{item.selected ? 'selected' : ''}}"
+          data-site-id="{{item.siteId}}"
+          bindtap="selectPaymentSite"
+        >
+          <view class="site-result-pin">
+            <image src="/assets/icons/lucide-map-pin-blue.svg" mode="aspectFit"></image>
+          </view>
+          <view class="site-result-copy">
+            <view class="site-result-name-row">
+              <text class="site-result-name">{{item.siteName}}</text>
+              <text wx:if="{{item.selected}}" class="site-selected-tag">当前</text>
+            </view>
+            <text wx:if="{{item.regionText}}" class="site-result-region">{{item.regionText}}</text>
+            <text class="site-result-address">{{item.address || '暂无详细地址'}}</text>
+          </view>
+          <text class="site-result-arrow">›</text>
+        </button>
+
+        <view wx:if="{{!siteSelectorLoading && !siteSelectorResults.length}}" class="site-selector-empty">
+          <text class="site-selector-empty-title">{{siteSelectorError || '没有找到可办卡场地'}}</text>
+          <text class="site-selector-empty-desc">可切换城市、区域或关键词；仍为空时需先在后台为场地开通微信收款</text>
+          <button class="site-selector-retry" bindtap="submitPaymentSiteSearch">重新查询</button>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <phone-auth
+    visible="{{phoneAuthVisible}}"
+    title="微信手机号登录"
+    desc="购买洗车卡前需要授权手机号，用于绑定会员卡、洗车券和支付订单。"
+    bindsuccess="onPhoneAuthSuccess"
+    bindcancel="onPhoneAuthCancel"
+  />
+</view>

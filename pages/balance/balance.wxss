@@ -1,0 +1,8 @@
+.asset-page { min-height: 100vh; padding: 28rpx 24rpx 60rpx; box-sizing: border-box; background: #f5f7fb; }
+.balance-hero { padding: 38rpx 36rpx; border-radius: 18rpx; color: #fff; background: #216fe9; box-shadow: 0 14rpx 32rpx rgba(33,111,233,.22); }
+.hero-label { font-size: 25rpx; opacity: .82; }.hero-value { margin-top: 12rpx; font-size: 64rpx; font-weight: 800; }
+.recharge-btn { width: 180rpx !important; height: 68rpx !important; margin: 26rpx 0 0 !important; border-radius: 34rpx; color: #216fe9; font-size: 27rpx; line-height: 68rpx; text-align: center; background: #fff; }
+.section-title { margin: 34rpx 8rpx 18rpx; color: #17243b; font-size: 31rpx; font-weight: 800; }
+.record-list { padding: 0 28rpx; border-radius: 16rpx; background: #fff; }.record-row { display: flex; justify-content: space-between; align-items: center; min-height: 126rpx; border-bottom: 1rpx solid #edf1f7; }.record-row:last-child { border-bottom: 0; }
+.record-title { color: #17243b; font-size: 29rpx; }.record-time,.record-balance { margin-top: 10rpx; color: #8994a6; font-size: 22rpx; }.record-right { text-align: right; }.record-amount { font-size: 30rpx; font-weight: 800; }.income { color: #16a34a; }.expense { color: #17243b; }
+.empty { padding: 100rpx 24rpx; color: #8a95a8; font-size: 27rpx; text-align: center; }.retry-btn { width: 200rpx !important; height: 70rpx !important; margin: 28rpx auto 0 !important; border-radius: 35rpx; color: #fff; line-height: 70rpx; text-align: center; background: #216fe9; }

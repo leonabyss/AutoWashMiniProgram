@@ -1,0 +1,140 @@
+.message-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background: #f6f8fc;
+}
+
+.message-card {
+  margin-bottom: 22rpx;
+  padding: 28rpx;
+  display: flex;
+  gap: 22rpx;
+  border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 12rpx 28rpx rgba(14, 40, 80, 0.06);
+}
+
+.message-card.unread {
+  border: 2rpx solid rgba(33, 111, 233, 0.12);
+}
+
+.message-card-hover { opacity: 0.7; }
+
+.message-icon {
+  width: 76rpx;
+  height: 76rpx;
+  flex: 0 0 76rpx;
+  border-radius: 50%;
+  color: #216fe9;
+  font-size: 30rpx;
+  font-weight: 900;
+  line-height: 76rpx;
+  text-align: center;
+  background: #edf5ff;
+}
+
+.message-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.message-title {
+  flex: 1;
+  min-width: 0;
+  color: #13223a;
+  font-size: 31rpx;
+  font-weight: 900;
+}
+
+.unread-dot {
+  width: 16rpx;
+  height: 16rpx;
+  flex: 0 0 16rpx;
+  border-radius: 50%;
+  background: #f04438;
+}
+
+.message-desc {
+  margin-top: 12rpx;
+  color: #526070;
+  font-size: 26rpx;
+  line-height: 1.45;
+}
+
+.message-time {
+  margin-top: 18rpx;
+  color: #98a2b3;
+  font-size: 23rpx;
+}
+
+.message-arrow { align-self: center; color: #a4adbc; font-size: 44rpx; }
+
+.empty-state {
+  padding: 180rpx 40rpx 100rpx;
+  color: #9aa4b2;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 112rpx;
+  height: 112rpx;
+  margin: 0 auto 28rpx;
+  border-radius: 50%;
+  color: #216fe9;
+  font-size: 42rpx;
+  font-weight: 900;
+  line-height: 112rpx;
+  background: #edf5ff;
+}
+
+.empty-title {
+  color: #13223a;
+  font-size: 32rpx;
+  font-weight: 900;
+}
+
+.empty-desc {
+  margin-top: 14rpx;
+  color: #9aa4b2;
+  font-size: 25rpx;
+}
+
+.message-loading {
+  padding-top: 6rpx;
+}
+
+.loading-card {
+  height: 154rpx;
+  margin-bottom: 22rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(90deg, #edf1f6 20%, #f7f9fc 45%, #edf1f6 70%);
+  background-size: 220% 100%;
+  animation: message-loading 1.2s linear infinite;
+}
+
+.loading-card.short {
+  height: 132rpx;
+}
+
+.retry-btn {
+  width: 210rpx !important;
+  height: 72rpx;
+  margin: 30rpx auto 0 !important;
+  border-radius: 36rpx;
+  color: #fff !important;
+  font-size: 25rpx;
+  line-height: 72rpx;
+  background: #216fe9 !important;
+}
+
+@keyframes message-loading {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}

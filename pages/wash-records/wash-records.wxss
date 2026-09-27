@@ -1,0 +1,125 @@
+.list-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background: #f6f8fc;
+}
+
+.record-card {
+  margin-bottom: 22rpx;
+  padding: 28rpx;
+  border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 12rpx 28rpx rgba(14, 40, 80, 0.06);
+}
+
+.record-top,
+.record-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.record-title {
+  flex: 1;
+  min-width: 0;
+  color: #13223a;
+  font-size: 32rpx;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-pill {
+  flex: 0 0 auto;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  color: #216fe9;
+  font-size: 23rpx;
+  font-weight: 800;
+  background: #edf5ff;
+}
+
+.status-pill.finished {
+  color: #16a34a;
+  background: #ecfdf3;
+}
+
+.status-pill.failed,
+.status-pill.cancelled,
+.status-pill.canceled {
+  color: #d92d20;
+  background: #fff1f0;
+}
+
+.record-sub,
+.record-time {
+  margin-top: 12rpx;
+  color: #7a879c;
+  font-size: 25rpx;
+}
+
+.record-meta {
+  margin-top: 24rpx;
+  padding: 22rpx;
+  border-radius: 14rpx;
+  color: #13223a;
+  font-size: 28rpx;
+  font-weight: 800;
+  background: #f7f9fc;
+}
+
+.meta-label {
+  margin-right: 12rpx;
+  color: #7a879c;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.amount {
+  color: #216fe9;
+}
+
+.loading-text,
+.bottom-tip {
+  padding: 80rpx 0;
+  color: #9aa4b2;
+  font-size: 27rpx;
+  text-align: center;
+}
+
+.empty-state {
+  padding: 180rpx 40rpx 80rpx;
+  color: #9aa4b2;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 112rpx;
+  height: 112rpx;
+  margin: 0 auto 28rpx;
+  border-radius: 50%;
+  color: #216fe9;
+  font-size: 42rpx;
+  font-weight: 900;
+  line-height: 112rpx;
+  background: #edf5ff;
+}
+
+.empty-title {
+  color: #13223a;
+  font-size: 32rpx;
+  font-weight: 900;
+}
+
+.empty-desc {
+  margin-top: 14rpx;
+  color: #9aa4b2;
+  font-size: 25rpx;
+}
+
+.bottom-tip {
+  padding: 18rpx 0 40rpx;
+}

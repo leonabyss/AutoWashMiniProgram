@@ -1,0 +1,242 @@
+<view class="confirm-page">
+  <view class="progress-strip">
+    <view class="progress-track"></view>
+    <view class="progress-step completed">
+      <view class="step-dot">
+        <image class="step-check" src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image>
+      </view>
+      <text class="step-label">设备已识别</text>
+    </view>
+    <view class="progress-step active">
+      <view class="step-dot"><view class="step-core"></view></view>
+      <text class="step-label">选择结算</text>
+    </view>
+    <view class="progress-step">
+      <view class="step-dot"></view>
+      <text class="step-label">开始洗车</text>
+    </view>
+  </view>
+
+  <view class="machine-band">
+    <image class="machine-location-icon" src="/assets/icons/lucide-map-pin-white.svg" mode="aspectFit"></image>
+    <view class="machine-copy">
+      <view class="site-name">{{machine.siteName}}</view>
+      <view class="machine-meta">
+        <text class="machine-name">{{machine.name}}</text>
+        <view class="machine-status {{machine.onlineStatus === 'online' ? 'online' : 'offline'}}">
+          <view class="status-dot"></view>
+          <text>{{machine.onlineText}}</text>
+        </view>
+      </view>
+    </view>
+    <view
+      class="service-btn"
+      hover-class="service-btn-hover"
+      aria-role="button"
+      aria-label="联系客服"
+      bindtap="contactService"
+    >
+      <image class="service-icon" src="/assets/icons/lucide-headphones-blue.svg" mode="aspectFit"></image>
+      <text>客服</text>
+    </view>
+  </view>
+
+  <view class="timing-section">
+    <button class="timing-header" hover-class="section-hover" bindtap="toggleRules">
+      <view class="timing-heading">
+        <image class="section-icon" src="/assets/icons/lucide-clock-3.svg" mode="aspectFit"></image>
+        <text>机器计时说明</text>
+      </view>
+      <image
+        class="rules-arrow {{rulesExpanded ? 'expanded' : ''}}"
+        src="/assets/icons/lucide-chevron-down-blue.svg"
+        mode="aspectFit"
+      ></image>
+    </button>
+    <view wx:if="{{rulesExpanded}}" class="timing-content">
+      <view class="timing-row">
+        <image class="timing-check" src="/assets/icons/lucide-circle-check-blue.svg" mode="aspectFit"></image>
+        <text>冲水、泡沫或吸尘工作时计时</text>
+      </view>
+      <view class="timing-row">
+        <image class="timing-check" src="/assets/icons/lucide-circle-check-blue.svg" mode="aspectFit"></image>
+        <text wx:if="{{machine.maxMinutes}}">单次最长{{machine.maxMinutes}}分钟，超时将自动停机</text>
+        <text wx:else>单次最长时长以当前场地计费规则为准</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="billing-section">
+    <view class="billing-heading">
+      <image class="billing-icon" src="/assets/icons/lucide-credit-card.svg" mode="aspectFit"></image>
+      <text>计费规则</text>
+    </view>
+    <view class="billing-copy">
+      <view wx:if="{{machine.cardRule}}">洗车卡 {{machine.cardRule}}，超出部分按场地计费规则结算</view>
+      <view>洗车券1次1张 · 包月会员支持</view>
+    </view>
+  </view>
+
+  <view class="settlement-section">
+    <view class="section-title">选择结算方式</view>
+    <view class="settlement-list">
+      <view
+        class="settlement-row coupon-row {{payMethods[0].active ? 'active' : ''}}"
+        bindtap="choosePayMethod"
+        data-key="coupon_pack"
+        hover-class="settlement-hover"
+        aria-role="button"
+        aria-label="选择洗车券结算"
+      >
+        <view class="method-icon coupon-icon-wrap">
+          <image src="/assets/icons/lucide-ticket-blue.svg" mode="aspectFit"></image>
+        </view>
+        <view class="method-copy">
+          <view class="method-title-line">
+            <view class="method-title">洗车券</view>
+            <view wx:if="{{payMethods[0].badge}}" class="method-badge {{payMethods[0].active ? 'selected' : ''}}">{{payMethods[0].badge}}</view>
+          </view>
+          <view class="method-subtitle">{{payMethods[0].desc}}</view>
+        </view>
+        <view class="method-trailing">
+          <image class="method-chevron" src="/assets/icons/lucide-chevron-right-gray.svg" mode="aspectFit"></image>
+          <view class="method-radio"><view class="radio-core"></view></view>
+        </view>
+      </view>
+
+      <view class="settlement-row wallet-row {{payMethods[1].active ? 'active' : ''}}">
+        <button class="recharge-label" hover-class="recharge-hover" catchtap="rechargeWallet">充值</button>
+        <button
+          class="wallet-select"
+          bindtap="choosePayMethod"
+          data-key="wallet"
+          hover-class="settlement-hover"
+        >
+          <view class="method-icon wallet-icon-wrap">
+            <image src="/assets/icons/lucide-wallet-orange.svg" mode="aspectFit"></image>
+          </view>
+          <view class="method-copy">
+            <view class="method-title">余额支付</view>
+            <view class="method-subtitle">余额{{walletBalanceText}}元 · 0.8元/分钟</view>
+          </view>
+          <view class="method-radio"><view class="radio-core"></view></view>
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <view class="fixed-action">
+    <view class="action-hint">
+      <image src="/assets/icons/lucide-shield-check-blue.svg" mode="aspectFit"></image>
+      <text>确认设备与结算方式后即可启动</text>
+    </view>
+    <button class="start-btn" loading="{{starting}}" bindtap="startWash">开始洗车</button>
+  </view>
+
+  <view wx:if="{{assetPanelVisible}}" class="asset-mask" bindtap="closeAssetPanel" catchtouchmove="noop">
+    <view class="asset-panel" catchtap="noop">
+      <view class="asset-drag-handle"></view>
+      <view class="asset-header">
+        <view class="asset-heading">
+          <view class="asset-title">{{assetPanelTitle}}</view>
+          <view class="asset-intro">选择一种卡券用于本次洗车</view>
+        </view>
+        <button class="asset-close" hover-class="asset-close-hover" bindtap="closeAssetPanel">
+          <image src="/assets/icons/lucide-x-gray.svg" mode="aspectFit"></image>
+        </button>
+      </view>
+
+      <scroll-view class="asset-body" scroll-y enhanced show-scrollbar="{{false}}">
+        <block wx:if="{{assetPanelType === 'coupon_pack'}}">
+          <view wx:if="{{monthlyCards.length}}" class="asset-group-title first-group-title">
+            <view class="group-name"><text>包月会员</text><text class="group-count">{{monthlyCards.length}}</text></view>
+            <text class="group-rule">按分钟扣减</text>
+          </view>
+          <button
+            wx:for="{{monthlyCards}}"
+            wx:key="cardId"
+            class="asset-card member-card-option {{item.canUse ? '' : 'disabled'}}"
+            hover-class="asset-card-hover"
+            disabled="{{!item.canUse}}"
+            bindtap="chooseMemberCard"
+            data-id="{{item.cardId}}"
+          >
+            <view class="asset-type-mark member-mark"><image src="/assets/icons/lucide-crown-active.svg" mode="aspectFit"></image></view>
+            <view class="asset-card-main">
+              <view class="asset-card-name">{{item.name}}</view>
+              <view class="asset-card-desc">{{item.remainingDurationText || item.desc}}</view>
+              <view class="asset-card-time">{{item.canUse ? item.expireText : item.unavailableReason}}</view>
+            </view>
+            <view class="asset-select"><view class="asset-select-core"></view></view>
+          </button>
+
+          <view wx:if="{{washCards.length}}" class="asset-group-title">
+            <view class="group-name"><text>洗车卡</text><text class="group-count">{{washCards.length}}</text></view>
+            <text class="group-rule">按时间计费</text>
+          </view>
+          <button
+            wx:for="{{washCards}}"
+            wx:key="cardId"
+            class="asset-card wash-card-option {{item.canUse ? '' : 'disabled'}}"
+            hover-class="asset-card-hover"
+            disabled="{{!item.canUse}}"
+            bindtap="chooseWashCard"
+            data-id="{{item.cardId}}"
+          >
+            <view class="asset-type-mark wash-mark"><image src="/assets/icons/lucide-credit-card.svg" mode="aspectFit"></image></view>
+            <view class="asset-card-main">
+              <view class="asset-card-name">{{item.name}}</view>
+              <view class="asset-card-desc">按时间计费 · {{item.desc}}</view>
+              <view class="asset-card-time">{{item.canUse ? item.expireText : item.unavailableReason}}</view>
+            </view>
+            <view class="asset-select"><view class="asset-select-core"></view></view>
+          </button>
+
+          <view wx:if="{{singleCards.length || coupons.length}}" class="asset-group-title">
+            <view class="group-name"><text>10分钟一次卡</text><text class="group-count">{{singleCards.length + coupons.length}}</text></view>
+            <text class="group-rule">每次使用一张</text>
+          </view>
+          <button
+            wx:for="{{singleCards}}"
+            wx:key="cardId"
+            class="asset-card single-card-option {{item.canUse ? '' : 'disabled'}}"
+            hover-class="asset-card-hover"
+            disabled="{{!item.canUse}}"
+            bindtap="chooseMemberCard"
+            data-id="{{item.cardId}}"
+          >
+            <view class="asset-type-mark single-mark"><image src="/assets/icons/lucide-ticket-blue.svg" mode="aspectFit"></image></view>
+            <view class="asset-card-main">
+              <view class="asset-card-name">{{item.name}}</view>
+              <view class="asset-card-desc">免费洗车10分钟 · {{item.desc}}</view>
+              <view class="asset-card-time">{{item.canUse ? item.expireText : item.unavailableReason}}</view>
+            </view>
+            <view class="asset-select"><view class="asset-select-core"></view></view>
+          </button>
+          <button
+            wx:for="{{coupons}}"
+            wx:key="couponId"
+            class="asset-card single-card-option {{item.canUse ? '' : 'disabled'}}"
+            hover-class="asset-card-hover"
+            disabled="{{!item.canUse}}"
+            bindtap="chooseCoupon"
+            data-id="{{item.couponId}}"
+          >
+            <view class="asset-type-mark coupon-mark"><image src="/assets/icons/lucide-ticket-blue.svg" mode="aspectFit"></image></view>
+            <view class="asset-card-main">
+              <view class="asset-card-name">{{item.name}}</view>
+              <view class="asset-card-desc">{{item.detailText}}</view>
+              <view class="asset-card-time">{{item.canUse ? item.expireText : item.unavailableReason}}</view>
+            </view>
+            <view class="asset-select"><view class="asset-select-core"></view></view>
+          </button>
+
+          <view wx:if="{{!coupons.length && !washCards.length && !monthlyCards.length && !singleCards.length}}" class="empty-assets">
+            <image src="/assets/icons/lucide-ticket-blue.svg" mode="aspectFit"></image>
+            <text>暂无可用卡券</text>
+          </view>
+        </block>
+      </scroll-view>
+    </view>
+  </view>
+</view>

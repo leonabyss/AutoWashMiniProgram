@@ -1,0 +1,15 @@
+<view class="detail-page">
+  <view wx:if="{{message}}" class="detail-card">
+    <view class="category">{{message.category}}</view>
+    <view class="title">{{message.title}}</view>
+    <view class="time">{{message.time}}</view>
+    <view class="divider"></view>
+    <view class="content">{{message.content}}</view>
+    <view wx:if="{{message.benefit}}" class="benefit-card">
+      <view class="benefit-icon">券</view>
+      <view><view class="benefit-label">到账权益</view><view class="benefit-value">{{message.benefit}}</view></view>
+    </view>
+    <view class="source">消息来源：{{message.source}}</view>
+    <button wx:if="{{message.messageType === 'coupon_issued'}}" class="action-btn" bindtap="viewCoupons">查看我的洗车券</button>
+  </view>
+</view>

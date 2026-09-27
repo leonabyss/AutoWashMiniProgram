@@ -1,0 +1,96 @@
+<view
+  class="mine-page {{isPulling ? 'pulling' : ''}}"
+  bindtouchstart="handleTouchStart"
+  bindtouchmove="handleTouchMove"
+  bindtouchend="handleTouchEnd"
+  bindtouchcancel="handleTouchEnd"
+>
+  <view class="blue-shape" style="{{blueShapeStyle}}"></view>
+
+  <block wx:if="{{hasMineData}}">
+  <view class="profile-band" style="{{headerContentStyle}}">
+    <image wx:if="{{user.avatarUrl}}" class="avatar avatar-image" src="{{user.avatarUrl}}" mode="aspectFill"></image>
+    <view wx:else class="avatar">{{avatarText}}</view>
+    <view class="profile-text">
+      <view class="profile-name">{{user.name}}</view>
+      <view class="profile-phone">{{user.phone}} · {{user.memberLevel}}</view>
+    </view>
+  </view>
+
+  <view class="mine-card white-card" style="{{headerContentStyle}}">
+    <view class="stats">
+      <view wx:for="{{stats}}" wx:key="label" class="stat-item" data-index="{{index}}" bindtap="handleStatTap" hover-class="stat-item-hover">
+        <view class="stat-value">{{item.value}}</view>
+        <view class="stat-label">{{item.label}}</view>
+        <view class="stat-detail">查看详情</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{activeCards.length}}" class="preview-card white-card">
+    <view class="section-head">
+      <text>当前可用卡</text>
+      <text class="section-link" data-url="/pages/my-cards/my-cards" bindtap="handleMenuTap">查看全部</text>
+    </view>
+    <view class="active-card-list">
+      <view wx:for="{{activeCards}}" wx:key="cardId" class="active-card-item">
+        <view>
+          <view class="active-card-name">{{item.name}}</view>
+          <view class="active-card-expire">有效期至 {{item.validTo}}</view>
+        </view>
+        <view class="active-card-value">{{item.value}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="menu-card white-card">
+    <view wx:for="{{menus}}" wx:key="title" class="weui-cell weui-cell_access menu-row" data-url="{{item.url}}" data-action="{{item.action}}" bindtap="handleMenuTap">
+      <text>{{item.title}}</text>
+      <view class="menu-right">
+        <text wx:if="{{item.badgeKey === 'unreadInfoCount' && unreadInfoCount}}" class="menu-badge">{{unreadInfoCount}}</text>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="logout-section">
+    <button class="logout-btn" bindtap="logout">退出登录</button>
+  </view>
+  </block>
+
+  <view wx:elif="{{loadError}}" class="mine-empty">
+    <view class="mine-empty-title">信息加载失败</view>
+    <view class="mine-empty-desc">网络似乎不太稳定，请稍后重试</view>
+    <button class="retry-btn" bindtap="retryLoad">重新加载</button>
+  </view>
+
+  <view wx:else class="mine-skeleton" aria-label="正在加载">
+    <view class="skeleton-profile">
+      <view class="skeleton skeleton-avatar"></view>
+      <view class="skeleton-profile-lines">
+        <view class="skeleton skeleton-line skeleton-name"></view>
+        <view class="skeleton skeleton-line skeleton-phone"></view>
+      </view>
+    </view>
+    <view class="skeleton-card skeleton-stats">
+      <view wx:for="{{[1,2,3]}}" wx:key="*this" class="skeleton-stat">
+        <view class="skeleton skeleton-value"></view>
+        <view class="skeleton skeleton-label"></view>
+      </view>
+    </view>
+    <view class="skeleton-card skeleton-menu">
+      <view wx:for="{{[1,2,3,4,5,6]}}" wx:key="*this" class="skeleton-menu-row">
+        <view class="skeleton skeleton-menu-text"></view>
+        <view class="skeleton skeleton-arrow"></view>
+      </view>
+    </view>
+  </view>
+
+  <phone-auth
+    visible="{{phoneAuthVisible}}"
+    title="微信手机号登录"
+    desc="进入我的页面前需要授权手机号，用于展示会员、余额、卡券和订单。"
+    bindsuccess="onPhoneAuthSuccess"
+    bindcancel="onPhoneAuthCancel"
+  />
+</view>

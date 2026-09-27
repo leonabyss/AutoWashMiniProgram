@@ -1,0 +1,30 @@
+<view class="message-page">
+  <view wx:if="{{loading}}" class="message-loading">
+    <view class="loading-card"></view>
+    <view class="loading-card short"></view>
+  </view>
+  <view wx:elif="{{loadError}}" class="empty-state">
+    <view class="empty-title">消息加载失败</view>
+    <view class="empty-desc">请检查网络后重新加载</view>
+    <button class="retry-btn" bindtap="retry">重新加载</button>
+  </view>
+  <view wx:elif="{{messages.length}}" class="message-list">
+    <view wx:for="{{messages}}" wx:key="id" class="message-card {{item.unread ? 'unread' : ''}}" data-id="{{item.id}}" bindtap="openMessage" hover-class="message-card-hover">
+      <view class="message-icon">券</view>
+      <view class="message-main">
+        <view class="message-title-row">
+          <view class="message-title">{{item.title}}</view>
+          <view wx:if="{{item.unread}}" class="unread-dot"></view>
+        </view>
+        <view class="message-desc">{{item.desc}}</view>
+        <view class="message-time">{{item.time}}</view>
+      </view>
+      <view class="message-arrow">›</view>
+    </view>
+  </view>
+  <view wx:else class="empty-state">
+    <view class="empty-icon">信</view>
+    <view class="empty-title">暂无记录</view>
+    <view class="empty-desc">新的通知和权益变动会显示在这里</view>
+  </view>
+</view>

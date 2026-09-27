@@ -1,0 +1,75 @@
+<view class="device-control-page">
+  <view class="control-status">
+    <view class="status-item connection-status">
+      <view class="status-dot"></view>
+      <text>设备已连接</text>
+    </view>
+    <view class="status-divider"></view>
+    <view class="status-item operation-status">
+      <image class="status-icon" src="/assets/icons/lucide-remote-control.svg" mode="aspectFit"></image>
+      <text>{{activeControlKey === 'water' ? '正在冲水' : (activeControlKey === 'foam' ? '正在出泡沫' : (operatingKey ? '正在发送' : (waitingActionKey ? '确认中' : '等待操作')))}}</text>
+    </view>
+  </view>
+
+  <view class="device-control-list">
+    <button
+      class="device-action water-action {{activeControlKey === 'water' ? 'action-running' : ''}} {{waitingActionKey === 'water' ? 'action-waiting' : ''}} {{operatingKey === 'water' ? 'action-sending' : ''}}"
+      disabled="{{isOperating || activeControlKey === 'water' || waitingActionKey === 'water'}}"
+      hover-class="device-action-hover"
+      bindtap="tapWater"
+    >
+      <view class="action-icon-wrap">
+        <view class="action-feedback-ring"></view>
+        <image class="device-action-icon" src="/assets/icons/lucide-shower-head-white.svg" mode="aspectFit"></image>
+      </view>
+      <view class="action-divider"></view>
+      <view class="device-action-copy">
+        <text class="device-action-title">{{operatingKey === 'water' ? '发送中' : (waitingActionKey === 'water' ? '确认中' : (activeControlKey === 'water' ? '冲水中' : '冲水'))}}</text>
+        <text wx:if="{{operatingKey === 'water'}}" class="device-action-sub">正在连接设备</text>
+        <text wx:elif="{{activeControlKey === 'water'}}" class="device-action-sub">设备已确认执行</text>
+        <text wx:elif="{{waitingActionKey === 'water'}}" class="device-action-sub">{{controlFeedback}}</text>
+      </view>
+    </button>
+
+    <button
+      class="device-action foam-action {{activeControlKey === 'foam' ? 'action-running' : ''}} {{waitingActionKey === 'foam' ? 'action-waiting' : ''}} {{operatingKey === 'foam' ? 'action-sending' : ''}}"
+      disabled="{{isOperating || activeControlKey === 'foam' || waitingActionKey === 'foam'}}"
+      hover-class="device-action-hover"
+      bindtap="tapFoam"
+    >
+      <view class="action-icon-wrap">
+        <view class="action-feedback-ring"></view>
+        <image class="device-action-icon" src="/assets/icons/lucide-bubbles-white.svg" mode="aspectFit"></image>
+      </view>
+      <view class="action-divider"></view>
+      <view class="device-action-copy">
+        <text class="device-action-title">{{operatingKey === 'foam' ? '发送中' : (waitingActionKey === 'foam' ? '确认中' : (activeControlKey === 'foam' ? '泡沫中' : '泡沫'))}}</text>
+        <text wx:if="{{operatingKey === 'foam'}}" class="device-action-sub">正在连接设备</text>
+        <text wx:elif="{{activeControlKey === 'foam'}}" class="device-action-sub">设备已确认执行</text>
+        <text wx:elif="{{waitingActionKey === 'foam'}}" class="device-action-sub">{{controlFeedback}}</text>
+      </view>
+    </button>
+
+    <button
+      class="device-action stop-action {{operatingKey === 'stop' ? 'action-sending' : ''}}"
+      disabled="{{isOperating}}"
+      hover-class="device-action-hover"
+      bindtap="tapStop"
+    >
+      <view class="action-icon-wrap stop-icon-wrap">
+        <view class="action-feedback-ring"></view>
+        <image class="device-action-icon stop-action-icon" src="/assets/icons/lucide-square-stop-white.svg" mode="aspectFit"></image>
+      </view>
+      <view class="action-divider"></view>
+      <view class="device-action-copy">
+        <text class="device-action-title">{{operatingKey === 'stop' ? '发送中' : '停止'}}</text>
+        <text wx:if="{{operatingKey === 'stop'}}" class="device-action-sub">正在停止设备</text>
+      </view>
+    </button>
+
+    <button class="exit-remote-btn" hover-class="exit-remote-hover" bindtap="backToWashing">
+      <image class="exit-icon" src="/assets/icons/lucide-log-out-blue.svg" mode="aspectFit"></image>
+      <text>退出遥控</text>
+    </button>
+  </view>
+</view>

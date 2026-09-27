@@ -1,0 +1,113 @@
+<view class="washing-page {{washingSizeClass}}" style="{{washingViewportStyle}}">
+  <view class="progress-strip">
+    <view class="progress-line"></view>
+
+    <view class="progress-step completed">
+      <view class="progress-dot">
+        <image src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image>
+      </view>
+      <text>设备识别</text>
+    </view>
+
+    <view class="progress-step completed">
+      <view class="progress-dot">
+        <image src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image>
+      </view>
+      <text>结算确认</text>
+    </view>
+
+    <view class="progress-step completed">
+      <view class="progress-dot">
+        <image src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image>
+      </view>
+      <text>设备启动</text>
+    </view>
+
+    <view class="progress-step active">
+      <view class="progress-dot"><view class="progress-core"></view></view>
+      <text>洗车中</text>
+    </view>
+  </view>
+
+  <view class="washing-status">
+    <view class="status-state">
+      <view class="status-dot"></view>
+      <text>{{machineStatusText}}</text>
+    </view>
+    <view class="status-divider"></view>
+    <view class="status-time">
+      <text class="status-time-label">后台累计</text>
+      <text class="status-time-value">{{displayClock}}</text>
+    </view>
+  </view>
+
+  <view class="washing-visual">
+    <image class="washing-illustration" src="{{washingImageUrl}}" mode="aspectFill"></image>
+  </view>
+
+  <view class="account-row">
+    <view class="account-summary">
+      <image wx:if="{{accountSummary.icon === 'VIP'}}" class="account-icon crown-icon" src="/assets/icons/lucide-crown-active.svg" mode="aspectFit"></image>
+      <image wx:elif="{{accountSummary.icon === '券' || accountSummary.icon === '次'}}" class="account-icon" src="/assets/icons/lucide-ticket-blue.svg" mode="aspectFit"></image>
+      <image wx:elif="{{accountSummary.icon === '卡'}}" class="account-icon" src="/assets/icons/lucide-credit-card.svg" mode="aspectFit"></image>
+      <image wx:else class="account-icon" src="/assets/icons/lucide-wallet-orange.svg" mode="aspectFit"></image>
+      <view class="account-copy">
+        <text>{{accountSummary.prefix}}</text>
+        <text wx:if="{{accountSummary.value}}" class="account-value">{{accountSummary.value}}</text>
+        <text wx:if="{{accountSummary.unit}}">{{accountSummary.unit}}</text>
+      </view>
+    </view>
+
+    <view class="account-divider"></view>
+
+    <button class="fault-report-btn" hover-class="fault-report-hover" bindtap="openFaultReport">
+      <image class="fault-icon" src="/assets/icons/lucide-wrenches-orange.svg" mode="aspectFit"></image>
+      <text>{{faultReported ? '已上报' : '故障上报'}}</text>
+    </button>
+  </view>
+
+  <view class="washing-tip">
+    <image src="/assets/icons/lucide-circle-info-blue.svg" mode="aspectFit"></image>
+    <text>实际洗车用时以设备上报并由后台累计的数据为准</text>
+  </view>
+
+  <view class="washing-actions">
+    <button class="remote-control-btn" hover-class="remote-control-hover" bindtap="openRemoteControl">
+      <image class="remote-control-icon" src="/assets/icons/lucide-remote-control.svg" mode="aspectFit"></image>
+      <text>远程控制</text>
+    </button>
+
+    <button class="finish-btn" loading="{{stopping}}" disabled="{{stopping}}" hover-class="finish-btn-hover" bindtap="finishWash">
+      <image class="finish-icon" src="/assets/icons/lucide-square-stop-white.svg" mode="aspectFit"></image>
+      <text>{{stopping ? '正在结束' : '结束洗车'}}</text>
+    </button>
+  </view>
+
+  <view wx:if="{{faultPanelVisible}}" class="fault-mask" bindtap="closeFaultReport" catchtouchmove="noop">
+    <view class="fault-panel" catchtap="noop">
+      <view class="fault-header">
+        <view class="fault-title">故障上报</view>
+        <button class="weui-btn fault-close" bindtap="closeFaultReport">×</button>
+      </view>
+      <view class="fault-subtitle">请选择设备当前出现的问题</view>
+      <view class="fault-options">
+        <view
+          wx:for="{{faultOptions}}"
+          wx:key="key"
+          class="fault-option {{item.active ? 'active' : ''}}"
+          bindtap="toggleFaultOption"
+          data-key="{{item.key}}"
+        >{{item.label}}</view>
+      </view>
+      <textarea
+        class="fault-textarea"
+        maxlength="1000"
+        placeholder="请补充详细情况，例如哪个功能无法使用、持续多久、现场是否有异常提示"
+        value="{{faultDesc}}"
+        bindinput="onFaultDescInput"
+      ></textarea>
+      <view class="fault-note">{{faultDesc.length}}/1000 · 同一订单仅保留首次上报。上报不会自动结束洗车，补偿需审核处理。</view>
+      <button class="weui-btn primary-btn report-btn" loading="{{reporting}}" disabled="{{reporting}}" bindtap="submitFaultReport">一键上报</button>
+    </view>
+  </view>
+</view>

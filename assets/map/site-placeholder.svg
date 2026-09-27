@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750" height="360" viewBox="0 0 750 360">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e76ee"/>
+      <stop offset="1" stop-color="#19b76b"/>
+    </linearGradient>
+  </defs>
+  <rect width="750" height="360" fill="url(#bg)"/>
+  <rect x="74" y="96" width="602" height="170" rx="28" fill="rgba(255,255,255,.18)"/>
+  <path d="M191 222h368l-31-70c-8-19-27-31-49-31H269c-23 0-42 12-50 31l-28 70z" fill="#fff" opacity=".94"/>
+  <circle cx="263" cy="226" r="31" fill="#163d73"/>
+  <circle cx="492" cy="226" r="31" fill="#163d73"/>
+  <path d="M286 151h176c16 0 30 9 36 24l12 30H237l13-30c6-15 20-24 36-24z" fill="#bfe7ff"/>
+  <text x="375" y="314" text-anchor="middle" fill="#fff" font-size="34" font-family="Arial, sans-serif" font-weight="700">泡泡洗车点</text>
+</svg>

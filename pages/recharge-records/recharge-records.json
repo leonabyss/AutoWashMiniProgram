@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "充值记录",
+  "navigationBarBackgroundColor": "#ffffff",
+  "navigationBarTextStyle": "black",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#f6f8fc",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {}
+}

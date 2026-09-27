@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none">
+  <!-- Lucide Crown: https://lucide.dev/icons/crown -->
+  <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7Z" fill="#FF9F43" stroke="#B84E00" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5 20h14" stroke="#B84E00" stroke-width="1.7" stroke-linecap="round"/>
+</svg>

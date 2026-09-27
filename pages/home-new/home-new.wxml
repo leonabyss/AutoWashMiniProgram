@@ -1,0 +1,161 @@
+<view class="new-home-page {{homeSizeClass}}" style="{{homeViewportStyle}}">
+  <view class="new-home-content">
+    <button
+      wx:if="{{!isLoggedIn}}"
+      class="guest-login-card"
+      bindtap="loginNow"
+      aria-label="立即登录，登录后查看余额、洗车券与会员权益"
+    >
+      <view class="guest-login-icon-wrap">
+        <image
+          class="guest-login-icon"
+          src="/assets/icons/lucide-user-round.svg"
+          mode="aspectFit"
+        ></image>
+      </view>
+      <view class="guest-login-copy">
+        <text class="guest-login-title">立即登录</text>
+        <text class="guest-login-desc">登录后查看余额、洗车券与会员权益</text>
+      </view>
+      <text class="guest-login-action">登录</text>
+    </button>
+
+    <view wx:else class="account-card account-overview">
+      <view class="account-rights">
+        <image
+          class="membership-crown"
+          src="/assets/icons/lucide-crown-{{crownState}}.svg"
+          mode="aspectFit"
+        ></image>
+        <view class="account-rights-copy">
+          <text class="account-rights-title">{{accountMetrics.rightsTitle}}</text>
+          <text class="account-rights-detail {{accountMetrics.rightsState}}">{{accountMetrics.rightsDetail}}</text>
+        </view>
+      </view>
+
+      <button class="account-metric" data-url="/pages/balance/balance" bindtap="openAccountDetail">
+        <text class="metric-label">余额(元)</text>
+        <text class="metric-value">{{accountMetrics.balance}}</text>
+        <text class="metric-action">去充值 ›</text>
+      </button>
+      <button class="account-metric" data-url="/pages/my-cards/my-cards" bindtap="openAccountDetail">
+        <text class="metric-label">洗车卡(张)</text>
+        <text class="metric-value">{{accountMetrics.cardCount}}</text>
+        <text class="metric-action">去查看 ›</text>
+      </button>
+      <button class="account-metric" data-url="/pages/coupons/coupons" bindtap="openAccountDetail">
+        <text class="metric-label">优惠券(张)</text>
+        <text class="metric-value">{{accountMetrics.couponCount}}</text>
+        <text class="metric-action">去使用 ›</text>
+      </button>
+    </view>
+
+    <view class="banner-section">
+      <swiper
+        class="banner-swiper"
+        autoplay
+        circular
+        interval="3600"
+        duration="450"
+        indicator-dots="{{false}}"
+        bindchange="onBannerChange"
+      >
+        <swiper-item wx:for="{{banners}}" wx:key="id">
+          <view class="banner-item" bindtap="handleBannerTap" data-index="{{index}}">
+            <image
+              wx:if="{{item.imageUrl}}"
+              class="banner-image"
+              src="{{item.imageUrl}}"
+              mode="aspectFill"
+            ></image>
+            <view wx:else class="banner-loading"></view>
+          </view>
+        </swiper-item>
+      </swiper>
+
+      <view class="banner-dots">
+        <view
+          wx:for="{{banners}}"
+          wx:key="id"
+          class="banner-dot {{currentBanner === index ? 'active' : ''}}"
+        ></view>
+      </view>
+
+      <view wx:if="{{badgeImages.length}}" class="badge-stack">
+        <view
+          wx:for="{{badgeImages}}"
+          wx:key="id"
+          class="cms-edge-entry"
+          bindtap="handleBadgeTap"
+          data-index="{{index}}"
+        >
+          <image class="cms-edge-image" src="{{item.imageUrl}}" mode="widthFix"></image>
+        </view>
+      </view>
+
+      <button wx:else class="join-edge-entry" bindtap="openFranchise">
+        <image class="join-edge-icon" src="/assets/icons/lucide-handshake.svg" mode="aspectFit"></image>
+        <text>加盟合作</text>
+      </button>
+    </view>
+
+    <view class="operation-area">
+      <view wx:if="{{resumableOrder}}" class="scan-action order-actions {{orderAction ? 'order-action-active' : ''}}">
+        <button class="order-half order-continue" disabled="{{!!orderAction}}" bindtap="continueHomeWash">继续洗车</button>
+        <button class="order-half order-finish" disabled="{{!!orderAction}}" bindtap="finishHomeWash">结束洗车</button>
+        <view wx:if="{{orderAction}}" class="order-bubble {{orderAction === 'finish' ? 'bubble-finish' : 'bubble-continue'}}"></view>
+        <view wx:if="{{orderAction}}" class="order-action-label">{{orderAction === 'finish' ? '结束洗车' : '继续洗车'}}</view>
+      </view>
+      <button
+        wx:else
+        class="scan-action {{resumableOrder ? 'resume-mode' : ''}} {{!lastWash && !resumableOrder ? 'first-scan-mode' : ''}}"
+        bindtap="scanMachine"
+      >
+        <view class="scan-icon-wrap">
+          <image class="scan-icon" src="/assets/icons/lucide-qr-code-white.svg" mode="aspectFit"></image>
+          <view wx:if="{{!resumableOrder}}" class="scan-beam"></view>
+        </view>
+        <text>{{resumableOrder ? '继续洗车' : '扫码洗车'}}</text>
+      </button>
+
+      <view class="secondary-actions">
+        <button class="secondary-action share-action" open-type="share">
+          <image class="secondary-icon" src="/assets/icons/lucide-share-2.svg" mode="aspectFit"></image>
+          <view class="secondary-copy">
+            <text class="secondary-title">分享给好友</text>
+            <text class="secondary-subtitle">邀请好友 立享优惠</text>
+          </view>
+        </button>
+
+        <view class="card-action-wrap">
+          <text wx:if="{{cardPromoText}}" class="save-badge">{{cardPromoText}}</text>
+          <button class="secondary-action card-action" bindtap="buyCard">
+            <image class="secondary-icon" src="/assets/icons/lucide-credit-card.svg" mode="aspectFit"></image>
+            <view class="secondary-copy">
+              <text class="secondary-title">购买洗车卡</text>
+              <text class="secondary-subtitle">不限次数 更划算</text>
+            </view>
+          </button>
+        </view>
+      </view>
+
+      <view wx:if="{{lastWash}}" class="last-use-row">
+        <image class="last-use-icon" src="/assets/icons/lucide-clock-3.svg" mode="aspectFit"></image>
+        <view class="last-use-content">
+          <text class="last-use-label">上次使用</text>
+          <text class="last-use-site">{{lastWash.siteName}}</text>
+          <text class="last-use-machine">{{lastWash.machineName}}</text>
+          <text class="last-use-status {{lastWash.statusClass}}">{{lastWash.statusText}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <phone-auth
+    visible="{{phoneAuthVisible}}"
+    title="微信手机号登录"
+    desc="扫码洗车前需要授权手机号，用于识别会员、余额和当前订单。"
+    bindsuccess="onPhoneAuthSuccess"
+    bindcancel="onPhoneAuthCancel"
+  />
+</view>
