@@ -8,7 +8,7 @@
 .record-card {
   margin-bottom: 22rpx;
   padding: 28rpx;
-  border-radius: 18rpx;
+  border-radius: 12rpx;
   background: #fff;
   box-shadow: 0 12rpx 28rpx rgba(14, 40, 80, 0.06);
 }
@@ -27,9 +27,7 @@
   color: #13223a;
   font-size: 31rpx;
   font-weight: 900;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .amount {
@@ -99,3 +97,23 @@
 .bottom-tip {
   padding: 18rpx 0 40rpx;
 }
+
+.order-center-page { padding: 24rpx 0 0; }
+.order-categories { display: flex; flex-direction: column; background: #fff; border-top: 1rpx solid #e8edf3; border-bottom: 1rpx solid #e8edf3; }
+.order-category { position: relative; width: 100%; min-width: 0; min-height: 128rpx; margin: 0; padding: 24rpx 32rpx; display: flex; align-items: center; gap: 24rpx; box-sizing: border-box; text-align: left; line-height: 1.5; background: #fff; }
+.order-category + .order-category::before { content: ''; position: absolute; top: 0; left: 100rpx; right: 32rpx; height: 1rpx; background: #e8edf3; }
+.order-category.order-row-pressed { background: #f0f4f9; }
+.order-category image { width: 44rpx; height: 44rpx; flex: 0 0 44rpx; }
+.category-copy { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.order-category .category-arrow { width: 28rpx; height: 28rpx; flex: 0 0 28rpx; align-self: center; margin-top: 0; }
+.category-title { font-size: 30rpx; font-weight: 500; color: #13223a; }
+.category-desc { margin-top: 4rpx; font-size: 24rpx; color: #7a879c; white-space: normal; }
+.section-heading { margin: 32rpx 0 20rpx; font-size: 30rpx; font-weight: 600; color: #13223a; }
+.record-status { margin: 12rpx 0 22rpx; font-size: 25rpx; color: #1264ee; }
+.detail-row { display: flex; align-items: flex-start; gap: 16rpx; margin-top: 10rpx; font-size: 24rpx; color: #627086; }
+.detail-row > text:first-child { flex: 0 0 140rpx; }
+.detail-value { flex: 1; min-width: 0; text-align: right; overflow-wrap: anywhere; color: #27364d; }
+.amount { max-width: 45%; overflow-wrap: anywhere; color: #13223a; }
+.error-state { padding: 40rpx 0; text-align: center; font-size: 26rpx; color: #627086; }
+.retry-button { width: 240rpx; margin: 20rpx auto 0; padding: 14rpx; line-height: 1.5; font-size: 26rpx; color: #1264ee; background: #edf4ff; border-radius: 12rpx; }
+.retry-button::after { border: 0; }

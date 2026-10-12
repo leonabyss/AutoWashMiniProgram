@@ -1,10 +1,13 @@
-<view class="asset-page">
+<view class="asset-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
   <view class="balance-hero">
-    <view class="hero-label">当前余额（元）</view>
+    <view class="hero-label">{{reviewMode ? '虚拟体验余额（元）' : '当前余额（元）'}}</view>
     <view class="hero-value">{{balance}}</view>
-    <button class="recharge-btn" bindtap="recharge">去充值</button>
+    <button class="recharge-btn" bindtap="recharge">{{reviewMode ? '体验模拟充值' : '去充值'}}</button>
   </view>
-  <view class="section-title">最近余额明细</view>
+  <view class="section-title">{{reviewMode ? '最近体验扣费明细' : '最近余额明细'}}</view>
+  <view wx:if="{{reviewMode}}" class="review-account-note">体验余额不是真实充值，仅展示本机已同步的模拟订单结算。</view>
+  <view wx:if="{{reviewStale}}" class="review-account-note">部分记录暂为上次同步数据。</view>
   <view wx:if="{{records.length}}" class="record-list">
     <view wx:for="{{records}}" wx:key="id" class="record-row">
       <view><view class="record-title">{{item.title}}</view><view class="record-time">{{item.time}}</view></view>

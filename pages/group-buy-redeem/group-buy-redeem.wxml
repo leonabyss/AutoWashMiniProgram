@@ -1,0 +1,19 @@
+<view class="redeem-page platform-{{platform}}">
+  <view class="platform-header">
+    <view class="platform-name">{{platformName}}</view>
+    <view class="header-title">团购券核销</view>
+    <view class="site-name">{{siteName}}</view>
+  </view>
+  <view wx:if="{{loading}}" class="entry-loading">正在获取场地核销信息</view>
+  <view wx:else class="redeem-form">
+    <view wx:if="{{notice}}" class="notice">{{notice}}</view>
+    <block wx:if="{{entryVisible}}">
+      <view class="field-label">核销码</view>
+      <input class="code-input" type="text" value="{{redemptionCode}}" bindinput="inputCode" maxlength="128" disabled="{{submitting}}" placeholder="请输入{{platformName}}团购券核销码" confirm-type="done" bindconfirm="submitCode" />
+    </block>
+    <view wx:if="{{errorText}}" class="error-text">{{errorText}}</view>
+    <button wx:if="{{entryVisible}}" class="submit-btn" bindtap="submitCode" loading="{{submitting}}" disabled="{{submitting}}">{{submitting ? '正在核销' : '确认核销'}}</button>
+    <button wx:else class="retry-btn" bindtap="loadEntry">重新加载入口</button>
+    <button class="back-btn" bindtap="back" disabled="{{submitting}}">返回选择结算方式</button>
+  </view>
+</view>

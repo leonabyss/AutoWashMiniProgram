@@ -1,4 +1,6 @@
-<view class="washing-page {{washingSizeClass}}" style="{{washingViewportStyle}}">
+<view class="washing-page {{washingSizeClass}} {{reviewMode ? 'review-flow-mode' : ''}}" style="{{washingViewportStyle}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <view wx:if="{{networkNotice}}" class="wash-network-notice" role="alert">{{networkNotice}}</view>
   <view class="progress-strip">
     <view class="progress-line"></view>
 
@@ -68,7 +70,7 @@
 
   <view class="washing-tip">
     <image src="/assets/icons/lucide-circle-info-blue.svg" mode="aspectFit"></image>
-    <text>实际洗车用时以设备上报并由后台累计的数据为准</text>
+    <text>{{reviewMode ? '模拟功能开启期间计费，暂停不计费，用时以后台累计为准' : '实际洗车用时以设备上报并由后台累计的数据为准'}}</text>
   </view>
 
   <view class="washing-actions">
@@ -83,31 +85,5 @@
     </button>
   </view>
 
-  <view wx:if="{{faultPanelVisible}}" class="fault-mask" bindtap="closeFaultReport" catchtouchmove="noop">
-    <view class="fault-panel" catchtap="noop">
-      <view class="fault-header">
-        <view class="fault-title">故障上报</view>
-        <button class="weui-btn fault-close" bindtap="closeFaultReport">×</button>
-      </view>
-      <view class="fault-subtitle">请选择设备当前出现的问题</view>
-      <view class="fault-options">
-        <view
-          wx:for="{{faultOptions}}"
-          wx:key="key"
-          class="fault-option {{item.active ? 'active' : ''}}"
-          bindtap="toggleFaultOption"
-          data-key="{{item.key}}"
-        >{{item.label}}</view>
-      </view>
-      <textarea
-        class="fault-textarea"
-        maxlength="1000"
-        placeholder="请补充详细情况，例如哪个功能无法使用、持续多久、现场是否有异常提示"
-        value="{{faultDesc}}"
-        bindinput="onFaultDescInput"
-      ></textarea>
-      <view class="fault-note">{{faultDesc.length}}/1000 · 同一订单仅保留首次上报。上报不会自动结束洗车，补偿需审核处理。</view>
-      <button class="weui-btn primary-btn report-btn" loading="{{reporting}}" disabled="{{reporting}}" bindtap="submitFaultReport">一键上报</button>
-    </view>
-  </view>
+<include src="../../components/fault-report-panel/fault-report-panel.wxml" />
 </view>

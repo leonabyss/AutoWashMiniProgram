@@ -1,4 +1,6 @@
-<view class="card-page">
+<view class="card-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <view wx:if="{{reviewMode}}" class="review-account-note">体验展示卡为本机模拟购买记录，不发放真实权益。其余为真实持有卡券，模拟洗车不会消耗。</view>
   <view class="tabs">
     <view class="tab-slider slider-{{activeTabIndex}}"></view>
     <button

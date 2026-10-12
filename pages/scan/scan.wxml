@@ -1,7 +1,8 @@
-<view class="scan-page">
+<view class="scan-page {{reviewMode ? 'review-scan-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
   <view wx:if="{{!canScan && !phoneAuthVisible}}" class="scan-loading">
     <view class="loading-spinner"></view>
-    <text>正在检查登录状态...</text>
+    <text>{{reviewMode ? '正在识别模拟洗车设备…' : '正在检查登录状态…'}}</text>
   </view>
 
   <block wx:if="{{canScan}}">
@@ -14,28 +15,8 @@
           <text class="heading-title">扫描洗车机二维码</text>
           <text class="heading-subtitle">对准设备上的二维码即可识别</text>
         </view>
-        <button class="debug-toggle" hover-class="debug-toggle-hover" bindtap="toggleManualPanel">
-          {{manualPanelExpanded ? '收起调试' : '调试输入'}}
-        </button>
       </view>
 
-      <view wx:if="{{manualPanelExpanded}}" class="manual-row">
-        <input
-          class="manual-input"
-          value="{{manualQrText}}"
-          placeholder="输入二维码信息"
-          placeholder-class="manual-placeholder"
-          confirm-type="send"
-          bindinput="onManualQrInput"
-          bindconfirm="submitManualQr"
-        />
-        <button
-          class="manual-submit"
-          disabled="{{resolving}}"
-          hover-class="manual-submit-hover"
-          bindtap="submitManualQr"
-        >提交</button>
-      </view>
     </view>
 
     <camera
@@ -62,10 +43,10 @@
       <cover-view class="frame-edge frame-edge-right"></cover-view>
       <cover-view class="frame-edge frame-edge-bottom"></cover-view>
       <cover-view class="frame-edge frame-edge-left"></cover-view>
-      <cover-view class="corner left-top"></cover-view>
-      <cover-view class="corner right-top"></cover-view>
-      <cover-view class="corner left-bottom"></cover-view>
-      <cover-view class="corner right-bottom"></cover-view>
+      <cover-view class="corner left-top"><cover-view class="corner-horizontal"></cover-view><cover-view class="corner-vertical"></cover-view></cover-view>
+      <cover-view class="corner right-top"><cover-view class="corner-horizontal"></cover-view><cover-view class="corner-vertical"></cover-view></cover-view>
+      <cover-view class="corner left-bottom"><cover-view class="corner-horizontal"></cover-view><cover-view class="corner-vertical"></cover-view></cover-view>
+      <cover-view class="corner right-bottom"><cover-view class="corner-horizontal"></cover-view><cover-view class="corner-vertical"></cover-view></cover-view>
       <cover-view class="alignment-mark alignment-top"></cover-view>
       <cover-view class="alignment-mark alignment-right"></cover-view>
       <cover-view class="alignment-mark alignment-bottom"></cover-view>
@@ -73,18 +54,20 @@
       <cover-view class="scan-line" style="top: {{scanLineTop}}px;"></cover-view>
     </cover-view>
 
-    <cover-view class="recognition-status" style="top: {{tipTop}}px;">
+    <cover-view class="recognition-status status-{{scanStatusTone}}" style="top: {{tipTop}}px;">
       <cover-view class="status-dot"></cover-view>
-      <cover-view class="status-text">正在识别设备</cover-view>
+      <cover-view class="status-text">{{scanStatusText}}</cover-view>
     </cover-view>
 
     <cover-view wx:if="{{errorText}}" class="scan-error">
       <cover-view>{{errorText}}</cover-view>
     </cover-view>
 
-    <cover-view class="scan-helper">保持手机稳定，识别成功后将自动跳转</cover-view>
+    <cover-view class="scan-helper" style="{{reviewMode ? 'bottom:' + (actionHeight + 10) + 'px;' : ''}}">{{reviewMode ? '无需真实二维码，点击下方按钮体验' : '保持手机稳定，识别成功后将自动跳转'}}</cover-view>
 
     <view class="scan-actions" style="height: {{actionHeight}}px;">
+      <button wx:if="{{reviewMode}}" class="review-scan-button" bindtap="scanReviewDevice" loading="{{resolving}}" disabled="{{resolving}}">{{resolving ? '正在识别模拟设备' : '审核体验：识别模拟设备'}}</button>
+      <view class="scan-action-tools">
       <button class="scan-action {{torchOn ? 'is-active' : ''}}" bindtap="toggleTorch">
         <view class="action-icon-wrap">
           <image class="action-icon" src="/assets/icons/lucide-flashlight.png" mode="aspectFit"></image>
@@ -98,6 +81,7 @@
         </view>
         <text class="action-text">从相册选择</text>
       </button>
+      </view>
     </view>
   </block>
 

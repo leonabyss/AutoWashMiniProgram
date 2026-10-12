@@ -1,5 +1,6 @@
 const api = require('../../utils/api')
-const { hasStoredSession, restoreSession } = require('../../utils/request')
+const { hasStoredSession, restoreSession, ensureLogin } = require('../../utils/request')
+const { registerOrder } = require('../../utils/review-mode')
 const { ensurePhoneBound } = require('../../utils/auth')
 const { API_BASE_URL, STORAGE_KEYS } = require('../../utils/config')
 const { centToYuan, secToText, makeClientRequestId } = require('../../utils/format')
@@ -222,7 +223,7 @@ function buildAccountSummary(profile, wallet, cards, coupons) {
     return {
       type: 'vip',
       icon: 'crown',
-      prefix: 'VIP还剩',
+      prefix: '会员还剩',
       value: String(getExpireDays(vipCard.validTo)),
       unit: '天到期'
     }
@@ -553,6 +554,9 @@ function createHomePage(overrides) {
   const options = {
   data: {
     user: {},
+    review: null,
+    reviewBalance: '',
+    reviewError: false,
     banners: [],
     badgeImages: [],
     cardPromoText: '',
@@ -584,8 +588,13 @@ function createHomePage(overrides) {
     this.updateHomeViewport()
   },
 
+  onReady() {
+    this.updateHomeViewport()
+  },
+
   onShow() {
     this.updateHomeViewport()
+    this.refreshReviewStatus().catch(() => {})
 
     if (!hasStoredSession()) {
       this.showLoggedOutState()
@@ -616,10 +625,12 @@ function createHomePage(overrides) {
     const heightRpx = windowHeight * 750 / windowWidth
     const bottomInset = info.safeArea ? Math.max(0, windowHeight - info.safeArea.bottom) : 0
     const panelBottomGap = getPanelBottomGap(info, windowWidth, heightRpx)
-
+    const homeSizeClass = getHomeSizeClass(heightRpx)
+    const homeViewportStyle = `height:${windowHeight}px;--safe-bottom:${bottomInset}px;--panel-bottom-gap:${panelBottomGap}rpx;`
+    if (this.data.homeSizeClass === homeSizeClass && this.data.homeViewportStyle === homeViewportStyle) return
     this.setData({
-      homeSizeClass: getHomeSizeClass(heightRpx),
-      homeViewportStyle: `height:${windowHeight}px;--safe-bottom:${bottomInset}px;--panel-bottom-gap:${panelBottomGap}rpx;`
+      homeSizeClass,
+      homeViewportStyle
     })
   },
 
@@ -772,10 +783,11 @@ function createHomePage(overrides) {
     this.setData({ loading: true })
 
     return restoreSession()
+      .then(() => this.refreshReviewStatus())
       .then(() => Promise.all([
         api.users.me().catch(() => null),
         api.wallet.get().catch(() => null),
-        api.wash.resume().catch(() => null),
+        this.data.review && this.data.review.reviewMode ? Promise.resolve(this.data.resumableOrder) : api.wash.resume().catch(() => null),
         api.member.cards().catch(() => []),
         api.member.temporaryCards({ activeOnly: true }).catch(() => []),
         api.coupons.mine({ status: 'available', page: 0, size: 1 }).catch(() => null),
@@ -799,7 +811,7 @@ function createHomePage(overrides) {
         const accountMetrics = buildAccountMetrics(profile, wallet, cards, coupons)
         const lastOrder = (washOrders && washOrders.items && washOrders.items[0]) || null
 
-        const isLoggedIn = !!(profile && profile.phone)
+        const isLoggedIn = !!(profile && profile.phone) || !!(this.data.review && this.data.review.reviewMode)
         const resumableOrder = isLoggedIn ? normalizeResumeOrder(resumeResult) : null
 
         this.setData({
@@ -850,6 +862,7 @@ function createHomePage(overrides) {
 
   showLoggedOutState() {
     this.setData({
+      review: null,
       user: {},
       accountSummary: guestSummary,
       accountMetrics: buildAccountMetrics(null, null, [], null),
@@ -935,6 +948,7 @@ function createHomePage(overrides) {
 
     if (!this.accountRefreshTimer) {
       this.accountRefreshTimer = setInterval(() => {
+        this.refreshReviewStatus().catch(() => {})
         this.refreshAccountSummary()
       }, HOME_ACCOUNT_REFRESH_INTERVAL)
     }
@@ -1045,6 +1059,7 @@ function createHomePage(overrides) {
   },
 
   refreshResumeOrder(shouldPrompt) {
+    if (this.data.review && this.data.review.reviewMode) return this.refreshReviewStatus()
     if (!this.data.isLoggedIn || this.resumeRefreshing) return Promise.resolve(null)
 
     this.resumeRefreshing = true
@@ -1375,7 +1390,95 @@ function createHomePage(overrides) {
     })
   },
 
+  openReview() {
+    if (this.data.review && this.data.review.reviewMode) {
+      wx.showModal({
+        title: '退出审核体验',
+        content: '退出会结算当前模拟订单，恢复正式洗车流程。虚拟体验余额不会转入真实钱包。',
+        confirmText: '退出体验',
+        success: (res) => {
+          if (!res.confirm) return
+          wx.showLoading({ title: '正在退出' })
+          api.review.exit().then(() => {
+            wx.removeStorageSync('reviewScanInfo')
+            this.clearResumableOrder()
+            this.setData({ review: null })
+            return this.loadHomeData()
+          }).catch((err) => wx.showModal({ title: '退出失败', content: err.message || '请稍后重试', showCancel: false }))
+            .finally(() => wx.hideLoading())
+        }
+      })
+      return
+    }
+    if (!this.data.review || this.data.review.enabled !== true) return
+    wx.showModal({
+      title: '审核体验码',
+      content: '正常微信登录后，使用虚拟余额和模拟设备体验现有洗车流程，不收取真实费用。',
+      editable: true,
+      placeholderText: '请输入审核体验码',
+      confirmText: '领取体验',
+      success: (res) => {
+        if (!res.confirm) return
+        const code = String(res.content || '').trim()
+        if (!code) { wx.showToast({ title: '请输入体验码', icon: 'none' }); return }
+        wx.showLoading({ title: '正在领取' })
+        ensureLogin().then(() => api.review.claim(code)).then(() => this.loadHomeData())
+          .catch((err) => wx.showModal({ title: '领取失败', content: err.message || '请稍后重试', showCancel: false }))
+          .finally(() => wx.hideLoading())
+      }
+    })
+  },
+
+  refreshReviewStatus() {
+    if (!hasStoredSession()) {
+      this.setData({ review: null, reviewError: false })
+      return Promise.resolve(null)
+    }
+    return api.review.status().then(async (status) => {
+      if (!hasStoredSession()) return null
+      let resumableOrder = null
+      if (status.reviewMode && status.currentOrderNo && status.enabled && !status.expired) {
+        const order = registerOrder(await api.review.orderStatus(status.currentOrderNo))
+        status = Object.assign({}, status, { balanceCent: order.balanceCent })
+        const target = getResumeTarget(order)
+        if (target && target.page !== 'wash-finish') {
+          resumableOrder = Object.assign({}, order, { targetPage: `/pages/${target.page}/${target.page}` })
+        }
+      }
+      const update = { review: status, reviewBalance: centToYuan(status.balanceCent), reviewError: false }
+      if (status.reviewMode) {
+        update.resumableOrder = resumableOrder
+        update.isLoggedIn = true
+      }
+      this.setData(update)
+      return status
+    }).catch((err) => {
+      this.setData({ reviewError: true })
+      throw err
+    })
+  },
+
   scanMachine() {
+    if (hasStoredSession()) {
+      this.refreshReviewStatus().then((status) => {
+        if (status && status.reviewMode) {
+          if (status.expired || !status.enabled) {
+            wx.showModal({ title: '审核体验不可用', content: '体验已过期或已关闭，请点击首页“退出体验”恢复正式流程。', showCancel: false })
+          } else if (this.data.resumableOrder) {
+            this.enterResumeOrder(this.data.resumableOrder)
+          } else {
+            this.openScanPage()
+          }
+        } else {
+          this.scanRealMachine()
+        }
+      }).catch((err) => wx.showModal({ title: '暂时无法开始洗车', content: err.message || '请检查网络后重试', showCancel: false }))
+      return
+    }
+    this.scanRealMachine()
+  },
+
+  scanRealMachine() {
     this.requirePhone(() => {
       if (this.data.resumableOrder) {
         this.enterResumeOrder(this.data.resumableOrder)
@@ -1390,6 +1493,7 @@ function createHomePage(overrides) {
     const nextAction = this.authAfterSuccess
 
     this.setData({ phoneAuthVisible: false })
+    this.refreshReviewStatus().catch(() => {})
     this.loadHomeData()
       .finally(() => {
         this.authAfterSuccess = null
@@ -1461,8 +1565,10 @@ function createHomePage(overrides) {
   },
 
   buyCard() {
-    wx.navigateTo({
-      url: '/pages/buy-card/buy-card'
+    this.requirePhone(() => {
+      wx.navigateTo({
+        url: '/pages/buy-card/buy-card'
+      })
     })
   }
   }

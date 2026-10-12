@@ -1,3 +1,5 @@
+@import "../../components/fault-report-panel/fault-report-panel.wxss";
+
 page {
   width: 100vw;
   height: 100vh;
@@ -327,105 +329,7 @@ page {
   flex: 0 0 54rpx;
 }
 
-.fault-mask {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 30;
-  display: flex;
-  align-items: flex-end;
-  background: rgba(15, 23, 42, 0.58);
-}
 
-.fault-panel {
-  width: 100%;
-  max-height: 82vh;
-  padding: 30rpx 30rpx calc(40rpx + env(safe-area-inset-bottom));
-  overflow-y: auto;
-  border-radius: 28rpx 28rpx 0 0;
-  background: #ffffff;
-}
-
-.fault-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.fault-title {
-  color: #13223a;
-  font-size: 38rpx;
-  font-weight: 800;
-}
-
-.fault-close {
-  width: 64rpx;
-  height: 64rpx;
-  color: #7a879c;
-  font-size: 44rpx;
-  line-height: 64rpx;
-}
-
-.fault-subtitle {
-  margin-top: 10rpx;
-  color: #68758a;
-  font-size: 27rpx;
-  line-height: 1.45;
-}
-
-.fault-options {
-  display: flex;
-  margin-top: 28rpx;
-  flex-wrap: wrap;
-  gap: 18rpx;
-}
-
-.fault-option {
-  min-width: 196rpx;
-  height: 72rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid #e5e9f1;
-  border-radius: 36rpx;
-  color: #41506a;
-  font-size: 28rpx;
-  line-height: 72rpx;
-  text-align: center;
-  background: #f7f9fc;
-}
-
-.fault-option.active {
-  border-color: #216fe9;
-  color: #216fe9;
-  background: #e8f1ff;
-}
-
-.fault-textarea {
-  width: 100%;
-  min-height: 180rpx;
-  margin-top: 28rpx;
-  padding: 22rpx 24rpx;
-  border-radius: 14rpx;
-  color: #1d2b43;
-  font-size: 28rpx;
-  line-height: 1.45;
-  background: #f5f7fb;
-}
-
-.fault-note {
-  margin-top: 18rpx;
-  color: #7a879c;
-  font-size: 24rpx;
-  line-height: 1.5;
-}
-
-.report-btn {
-  height: 96rpx !important;
-  margin-top: 30rpx !important;
-  border-radius: 12rpx;
-  font-size: 34rpx;
-}
 
 .washing-compact .progress-strip {
   height: 98rpx;

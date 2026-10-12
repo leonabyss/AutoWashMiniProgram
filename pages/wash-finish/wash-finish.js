@@ -1,6 +1,7 @@
 const api = require('../../utils/api')
 const { STORAGE_KEYS } = require('../../utils/config')
 const { centToYuan, secToText } = require('../../utils/format')
+const { isReviewOrder } = require('../../utils/review-mode')
 
 const FINISH_POLL_MS = 3000
 
@@ -12,7 +13,7 @@ function payMethodText(method) {
     coupon: '洗车券'
   }
 
-  return map[String(method || '').toLowerCase()] || method || '--'
+  return map[String(method || '').toLowerCase()] || '结算方式待确认'
 }
 
 function normalizeCards(cards) {
@@ -275,8 +276,10 @@ function calculateAmountByDuration(order, status) {
 }
 
 Page({
+  behaviors: [require('../../utils/fault-sheet')],
   data: {
     orderNo: '',
+    reviewMode: false,
     seconds: 0,
     displayTime: '--',
     cost: '--',
@@ -312,7 +315,7 @@ Page({
     this.updateFinishViewport()
 
     if (orderNo) {
-      this.setData({ orderNo })
+      this.setData({ orderNo, reviewMode: isReviewOrder(orderNo) })
       this.loadOrderDetail(orderNo)
       this.startFinishPolling()
       return
@@ -387,6 +390,27 @@ Page({
   },
 
   loadOrderDetail(orderNo, silent) {
+    if (this.data.reviewMode) {
+      return api.wash.status(orderNo).then((order) => {
+        const resolved = order.washStatus === 'finished'
+        this.setData({
+          seconds: order.washDurationSec,
+          displayTime: secToText(order.washDurationSec),
+          cost: centToYuan(order.amountCent), remain: centToYuan(order.balanceCent),
+          siteName: order.siteName, machineName: order.machineName,
+          payMethodText: '虚拟体验余额',
+          settlementSummary: { label: '本次体验扣费', prefix: '¥', value: centToYuan(order.amountCent), unit: '', tone: 'blue' },
+          remainingSummary: { label: '剩余体验余额', prefix: '¥', value: centToYuan(order.balanceCent), unit: '', tone: '', icon: '/assets/icons/lucide-wallet-orange.svg' },
+          settlementResolved: resolved, settlementLoading: !resolved
+        })
+        if (resolved) {
+          this.stopFinishPolling()
+          wx.removeStorageSync(STORAGE_KEYS.currentWashOrderNo)
+        }
+      }).catch((err) => {
+        if (!silent) wx.showModal({ title: '结算信息获取失败', content: err.message || '请稍后重试', showCancel: false })
+      })
+    }
     api.wash.detail(orderNo)
       .catch(() => null)
       .then((order) => api.wash.status(orderNo)
@@ -480,6 +504,10 @@ Page({
   },
 
   openFaultReport() {
+    if (this.data.reviewMode) {
+      wx.showModal({ title: '模拟设备', content: '审核体验不涉及真实机器，故障上报仅用于正式洗车订单。', showCancel: false })
+      return
+    }
     const reports = wx.getStorageSync(STORAGE_KEYS.faultReports) || []
     const reported = reports.some((item) => String(item.orderNo) === String(this.data.orderNo))
     if (this.data.faultReported || reported) {
@@ -487,13 +515,12 @@ Page({
       wx.showModal({ title: '已上报', content: '本订单的故障已提交，请等待核查。同一订单仅保留首次上报内容。', showCancel: false })
       return
     }
+    this.resetFaultSheet()
     this.setData({ faultPanelVisible: true })
   },
 
   closeFaultReport() {
-    if (this.data.reporting) return
-
-    this.setData({ faultPanelVisible: false })
+    this.dismissFaultSheet()
   },
 
   toggleFaultOption(event) {

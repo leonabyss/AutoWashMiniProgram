@@ -1,26 +1,26 @@
-<view class="list-page">
-  <view wx:if="{{records.length}}" class="record-list">
-    <view wx:for="{{records}}" wx:key="recordKey" class="record-card">
-      <view class="record-top">
-        <view class="record-title">{{item.title}}</view>
-        <view class="amount {{item.directionClass}}">{{item.amountText}}</view>
-      </view>
-      <view class="record-sub">
-        <text>{{item.bizTypeText}}</text>
-        <text wx:if="{{item.statusText}}"> · {{item.statusText}}</text>
-      </view>
-      <view class="record-footer">
-        <text>{{item.createdAtText}}</text>
-        <text>{{item.balanceText}}</text>
-      </view>
+<view class="list-page {{!isDetail ? 'order-center-page' : ''}} {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <view wx:if="{{!isDetail}}" class="order-categories">
+    <view wx:for="{{categories}}" wx:key="key" data-key="{{item.key}}" bindtap="selectCategory" hover-class="order-row-pressed" role="button" aria-label="{{item.title}}" class="order-category">
+      <image src="{{item.icon}}" mode="aspectFit" />
+      <view class="category-copy"><text class="category-title">{{item.title}}</text><text class="category-desc">{{item.desc}}</text></view>
+      <image class="category-arrow" src="/assets/icons/lucide-chevron-right-dark.png" mode="aspectFit" />
     </view>
   </view>
-  <view wx:elif="{{!loading}}" class="empty-state">
-    <view class="empty-icon">充</view>
-    <view class="empty-title">暂无记录</view>
-    <view class="empty-desc">充值或余额变动后，记录会显示在这里</view>
+  <block wx:if="{{isDetail}}">
+  <view class="section-heading">{{activeTitle}}</view>
+  <view wx:if="{{reviewMode}}" class="review-account-note">仅展示本机体验记录，与真实交易分开。模拟购卡、充值未实际扣款、入账或发卡。</view>
+  <view wx:if="{{reviewStale}}" class="review-account-note">部分体验记录为上次同步数据。</view>
+  <view class="record-list">
+    <view wx:for="{{records}}" wx:key="recordKey" class="record-card">
+      <view class="record-top"><view class="record-title">{{item.title}}</view><text class="amount">{{item.amountText}}</text></view>
+      <view class="record-status">{{item.statusText}}</view>
+      <view wx:for="{{item.rows}}" wx:for-item="row" wx:key="label" class="detail-row"><text>{{row.label}}</text><text class="detail-value">{{row.value}}</text></view>
+    </view>
   </view>
-  <view wx:if="{{loading}}" class="loading-text">加载中...</view>
-  <view wx:if="{{loadingMore}}" class="bottom-tip">继续加载...</view>
+  <view wx:if="{{loadError}}" class="error-state"><text>订单信息加载失败，请重试</text><button bindtap="retry" class="retry-button">重新加载</button></view>
+  <view wx:elif="{{!records.length && !loading}}" class="empty-state"><view class="empty-title">暂无记录</view><view class="empty-desc">当前分类下暂无订单或交易记录</view></view>
+  <view wx:if="{{loading || loadingMore}}" class="loading-text">正在加载...</view>
   <view wx:if="{{finished && records.length}}" class="bottom-tip">没有更多了</view>
+  </block>
 </view>

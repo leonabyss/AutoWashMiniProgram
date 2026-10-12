@@ -1,4 +1,5 @@
 const { API_BASE_URL, STORAGE_KEYS } = require('./config')
+const { chineseText } = require('./display-text')
 
 let refreshingPromise = null
 let loginPromise = null
@@ -25,6 +26,9 @@ function setSession(session) {
 }
 
 function clearSession() {
+  wx.removeStorageSync('reviewOrderRegistry')
+  wx.removeStorageSync('reviewScanInfo')
+  wx.removeStorageSync('reviewMineSummary')
   wx.removeStorageSync(STORAGE_KEYS.accessToken)
   wx.removeStorageSync(STORAGE_KEYS.refreshToken)
   wx.removeStorageSync(STORAGE_KEYS.tokenExpireAt)
@@ -52,10 +56,10 @@ function wxLogin() {
         if (code) {
           resolve(code)
         } else {
-          reject(new Error('微信登录失败：未获取到 code'))
+          reject(new Error('微信登录失败：未获取到登录凭证'))
         }
       },
-      fail: reject
+      fail: () => reject(new Error('微信登录失败，请稍后重试'))
     })
   })
 }
@@ -111,10 +115,11 @@ function request(options) {
         resolve(body)
       },
       fail: (err) => {
-        reject(Object.assign(new Error(err.errMsg || '网络请求失败'), err))
+        reject(Object.assign(new Error(err.errMsg || '网络请求失败'), err, { code: 'NETWORK_ERROR' }))
       }
     })
   }).catch((err) => {
+    err.message = chineseText(err.message, '操作失败，请稍后重试')
     if (options.auth === false || options._retried || err.code !== 'UNAUTHORIZED') {
       throw err
     }

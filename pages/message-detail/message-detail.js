@@ -1,5 +1,6 @@
 const api = require('../../utils/api')
 const { STORAGE_KEYS } = require('../../utils/config')
+const { messagePresentation } = require('../../utils/message-presentation')
 
 Page({
   data: {
@@ -15,7 +16,7 @@ Page({
       return
     }
 
-    this.setData({ message })
+    this.setData({ message: Object.assign({}, message, messagePresentation(message)) })
     api.messages.read(messageId).catch(() => {})
   },
 

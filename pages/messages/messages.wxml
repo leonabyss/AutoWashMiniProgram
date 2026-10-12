@@ -1,4 +1,13 @@
 <view class="message-page">
+  <view wx:if="{{!loading && !loadError && messages.length}}" class="message-toolbar">
+    <text class="message-toolbar-status">{{unreadCount ? '未读消息 ' + unreadCount + ' 条' : '全部消息已读'}}</text>
+    <button class="read-all-btn" bindtap="markAllRead" disabled="{{markingAllRead || !unreadCount}}">
+      <view class="read-all-content {{markingAllRead ? 'read-all-pending' : ''}}">
+        <image src="/assets/icons/lucide-circle-check-blue.png" mode="aspectFit"></image>
+        <text class="read-all-label">{{markingAllRead ? '正在标记' : '全部已读'}}</text>
+      </view>
+    </button>
+  </view>
   <view wx:if="{{loading}}" class="message-loading">
     <view class="loading-card"></view>
     <view class="loading-card short"></view>
@@ -10,7 +19,9 @@
   </view>
   <view wx:elif="{{messages.length}}" class="message-list">
     <view wx:for="{{messages}}" wx:key="id" class="message-card {{item.unread ? 'unread' : ''}}" data-id="{{item.id}}" bindtap="openMessage" hover-class="message-card-hover">
-      <view class="message-icon">券</view>
+      <view class="message-icon message-icon-{{item.iconKind}}">
+        <image src="{{item.iconUrl}}" mode="aspectFit"></image>
+      </view>
       <view class="message-main">
         <view class="message-title-row">
           <view class="message-title">{{item.title}}</view>

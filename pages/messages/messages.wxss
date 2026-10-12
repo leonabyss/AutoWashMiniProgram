@@ -22,6 +22,9 @@
 .message-card-hover { opacity: 0.7; }
 
 .message-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 76rpx;
   height: 76rpx;
   flex: 0 0 76rpx;
@@ -33,6 +36,64 @@
   text-align: center;
   background: #edf5ff;
 }
+
+.message-icon image {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.message-icon-recharge { background: #fff2e7; }
+.message-icon-card { background: #eef1ff; }
+.message-icon-connection { background: #e9f7f0; }
+.message-icon-notice { background: #dce8ff; }
+
+.message-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 72rpx;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 22rpx;
+  color: #526070;
+  font-size: 26rpx;
+}
+
+.message-toolbar-status {
+  display: flex;
+  min-width: 0;
+  min-height: 72rpx;
+  align-items: center;
+  line-height: 40rpx;
+}
+
+.message-toolbar .read-all-btn {
+  display: flex;
+  width: 190rpx;
+  min-width: 0;
+  max-width: 100%;
+  height: 72rpx;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none;
+  border-radius: 0;
+  box-sizing: border-box;
+  color: #165acb;
+  font-size: 26rpx;
+  line-height: 40rpx;
+  background: transparent;
+}
+
+.read-all-content { display: flex; height: 40rpx; align-items: center; justify-content: flex-end; gap: 10rpx; }
+.read-all-label { display: block; height: 40rpx; line-height: 40rpx; white-space: nowrap; }
+.read-all-btn image { display: block; width: 32rpx; height: 32rpx; flex: 0 0 32rpx; }
+.message-toolbar .read-all-btn[disabled] { opacity: 0.45; background: transparent; color: #526070; }
+.read-all-pending image { animation: read-all-pulse 1s ease-in-out infinite; }
+@keyframes read-all-pulse { 50% { opacity: .35; } }
 
 .message-main {
   flex: 1;

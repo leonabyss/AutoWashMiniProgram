@@ -1,8 +1,10 @@
 const api = require('../../utils/api')
 const { STORAGE_KEYS } = require('../../utils/config')
 const { ensureLogin, clearSession, hasStoredSession } = require('../../utils/request')
-const { ensurePhoneBound } = require('../../utils/auth')
+const { ensurePhoneBound, updateStoredUser } = require('../../utils/auth')
 const { centToYuan, secToText } = require('../../utils/format')
+const { ownerKey } = require('../../utils/review-mode')
+const { history: reviewHistory } = require('../../utils/review-account')
 
 function formatDate(value) {
   if (!value) return '--'
@@ -43,7 +45,7 @@ function statusText(status) {
     canceled: '已取消'
   }
 
-  return map[String(status || '').toLowerCase()] || status || '--'
+  return map[String(status || '').toLowerCase()] || '状态待确认'
 }
 
 function cardTypeText(summary) {
@@ -83,7 +85,9 @@ function normalizeActiveCards(list) {
 
 function normalizeSummary(summary) {
   const profile = summary.user || {}
-  const wallet = summary.wallet || {}
+  const review = summary.review || {}
+  const reviewMode = review.reviewMode === true
+  const wallet = reviewMode ? { balanceCent: review.balanceCent } : (summary.wallet || {})
   const coupons = summary.coupons || {}
   const memberCards = summary.memberCards || {}
   const temporaryCards = summary.temporaryCards || {}
@@ -103,7 +107,7 @@ function normalizeSummary(summary) {
     name,
     phone: profile.maskedPhone || profile.phone || '',
     avatarUrl: profile.avatarUrl || '',
-    memberLevel: isTest && accountLabel.indexOf('测试') < 0 ? `${accountLabel} · 测试` : accountLabel,
+    memberLevel: isTest || ['server_developer', 'dev_test', 'test_account', 'hardware_log'].indexOf(String(accountType).toLowerCase()) >= 0 ? '洗车用户' : accountLabel,
     accountType,
     accountTypeName,
     isTest,
@@ -113,23 +117,34 @@ function normalizeSummary(summary) {
   }
 
   return {
+    reviewMode,
+    reviewStatus: review,
+    reviewOrderCount: reviewMode && summary.reviewOrderCount != null ? Number(summary.reviewOrderCount) : null,
+    reviewRecordsUnavailable: summary.reviewRecordsUnavailable === true,
     summary,
     user,
     avatarText: name.slice(0, 1),
     stats: [
-      { label: '余额', value: `¥${user.balance}` },
-      { label: '洗车券', value: `${user.coupons}张` },
-      { label: '可用卡', value: `${Number(memberCards.activeCount || 0) + Number(temporaryCards.activeCount || 0)}张` }
+      { label: reviewMode ? '体验余额' : '余额', value: `¥${user.balance}` },
+      { label: reviewMode ? '真实洗车券' : '洗车券', value: `${user.coupons}张` },
+      { label: reviewMode ? '真实可用卡' : '可用卡', value: `${Number(memberCards.activeCount || 0) + Number(temporaryCards.activeCount || 0)}张` }
     ],
     activeCards: normalizeActiveCards((memberCards.activeCards || []).concat(temporaryCards.activeCards || [])),
     unreadInfoCount: Number(messages.unreadCount || 0),
     hasMineData: true,
-    loadError: false
+    loadError: false,
+    profileEditorVisible: false,
+    profileSaving: false,
+    draftNickname: '',
+    draftAvatarPath: '',
+    profileError: ''
   }
 }
 
 Page({
   data: {
+    reviewMode: false,
+    reviewOrderCount: 0,
     user: {},
     avatarText: '',
     stats: [],
@@ -141,7 +156,7 @@ Page({
     menus: [
       { title: '我的信息', url: '/pages/messages/messages', badgeKey: 'unreadInfoCount' },
       { title: '洗车记录', url: '/pages/wash-records/wash-records' },
-      { title: '充值记录', url: '/pages/recharge-records/recharge-records' },
+      { title: '订单中心', url: '/pages/recharge-records/recharge-records' },
       { title: '我的洗车卡', url: '/pages/my-cards/my-cards' },
       { title: '联系客服', action: 'contact' },
       { title: '关于泡泡fight洗车', action: 'about' }
@@ -159,9 +174,7 @@ Page({
     loadError: false
   },
 
-  onLoad() {
-    this.restoreMineCache()
-  },
+  onLoad() {},
 
   onShow() {
     this.refreshUnreadMessages()
@@ -196,6 +209,7 @@ Page({
   },
 
   handleTouchStart(event) {
+    if (this.data.profileEditorVisible) return
     const touch = event.touches && event.touches[0]
 
     if (!touch || (this.pageScrollTop || 0) > 0) return
@@ -277,22 +291,38 @@ Page({
       })
   },
 
-  restoreMineCache() {
-    const cached = wx.getStorageSync(STORAGE_KEYS.mineSummary)
+  restoreMineCache(review) {
+    const cached = wx.getStorageSync(review.reviewMode ? 'reviewMineSummary' : STORAGE_KEYS.mineSummary)
 
-    if (!cached || !cached.summary) return
+    if (!cached || !cached.summary || cached.owner !== ownerKey()) return
 
     this.setData(normalizeSummary(cached.summary))
   },
 
   loadMineData() {
+    const profileRevision = this.profileRevision || 0
     this.setData({ loading: true, loadError: false })
 
-    ensureLogin()
-      .then(() => api.users.summary())
+    return ensureLogin()
+      .then(() => api.review.status())
+      .then((review) => {
+        if (review.reviewMode !== this.data.reviewMode) this.setData({ hasMineData: false })
+        this.setData({ reviewMode: review.reviewMode === true })
+        this.restoreMineCache(review)
+        return api.users.summary().then(async (summary) => {
+          if (!review.reviewMode) return summary
+          const records = await reviewHistory(review).catch(() => null)
+          // A status poll can settle an exhausted order, so refresh the displayed balance afterwards.
+          const latest = await api.review.status()
+          return Object.assign({}, summary, { review: latest, reviewOrderCount: records ? records.items.length : null, reviewRecordsUnavailable: !records })
+        })
+      })
       .then((summary) => {
+        if (profileRevision !== (this.profileRevision || 0)) {
+          summary = Object.assign({}, summary, { user: Object.assign({}, summary.user, wx.getStorageSync(STORAGE_KEYS.user) || {}) })
+        }
         this.setData(normalizeSummary(summary), () => this.syncTabBarBadge())
-        wx.setStorageSync(STORAGE_KEYS.mineSummary, { summary, updatedAt: Date.now() })
+        wx.setStorageSync(this.data.reviewMode ? 'reviewMineSummary' : STORAGE_KEYS.mineSummary, { summary, owner: ownerKey(), updatedAt: Date.now() })
       })
       .catch((err) => {
         if (this.data.hasMineData) return
@@ -305,6 +335,75 @@ Page({
 
   retryLoad() {
     this.loadMineData()
+  },
+
+  openProfileEditor() {
+    if (!this.data.hasMineData || this.data.profileSaving) return
+    this.setData({
+      profileEditorVisible: true,
+      draftNickname: (this.data.summary.user && this.data.summary.user.nickname) || '',
+      draftAvatarPath: '',
+      profileError: ''
+    })
+  },
+
+  onChooseProfileAvatar(event) {
+    if (this.data.profileSaving) return
+    const path = event.detail && event.detail.avatarUrl
+    if (!path) return
+    if (!this.data.profileEditorVisible) this.openProfileEditor()
+    this.setData({ draftAvatarPath: path, profileError: '' })
+  },
+
+  inputProfileNickname(event) {
+    this.setData({ draftNickname: event.detail.value, profileError: '' })
+  },
+
+  closeProfileEditor() {
+    if (this.data.profileSaving) return
+    this.setData({ profileEditorVisible: false })
+  },
+
+  profileNoop() {},
+
+  applySavedProfile(profile) {
+    const user = updateStoredUser(profile)
+    const summary = Object.assign({}, this.data.summary, { user: Object.assign({}, this.data.summary.user, user) })
+    this.profileRevision = (this.profileRevision || 0) + 1
+    this.setData(normalizeSummary(summary))
+    wx.setStorageSync(this.data.reviewMode ? 'reviewMineSummary' : STORAGE_KEYS.mineSummary, { summary, owner: ownerKey(), updatedAt: Date.now() })
+  },
+
+  async saveProfile(event) {
+    if (this.data.profileSaving) return
+    const nickname = String(event.detail.value.nickname || '').trim()
+    if (!nickname || Array.from(nickname).length > 128) {
+      this.setData({ profileError: !nickname ? '请填写姓名或昵称' : '姓名或昵称最多128个字符' })
+      return
+    }
+    this.setData({ profileSaving: true, profileError: '', draftNickname: nickname })
+    let avatarSaved = false
+    try {
+      if (this.data.draftAvatarPath) {
+        wx.showLoading({ title: '上传头像' })
+        const profile = await api.users.uploadAvatar(this.data.draftAvatarPath)
+        this.applySavedProfile(profile)
+        avatarSaved = true
+        this.setData({ draftAvatarPath: '' })
+      }
+      if (nickname !== this.data.summary.user.nickname) {
+        wx.showLoading({ title: '保存资料' })
+        const profile = await api.users.updateMe({ nickname })
+        this.applySavedProfile(profile)
+      }
+      this.setData({ profileEditorVisible: false })
+      wx.showToast({ title: '资料已更新', icon: 'success' })
+    } catch (err) {
+      this.setData({ profileError: `${avatarSaved ? '头像已更新，姓名保存失败。' : ''}${err.message || '保存失败，请重试'}` })
+    } finally {
+      wx.hideLoading()
+      this.setData({ profileSaving: false })
+    }
   },
 
   syncTabBarBadge() {
@@ -327,20 +426,26 @@ Page({
 
   handleMenuTap(event) {
     const dataset = event.currentTarget.dataset || {}
+    if (dataset.action === 'contact') return
 
     if (dataset.url) {
       wx.navigateTo({ url: dataset.url })
       return
     }
 
-    if (dataset.action === 'contact') {
-      wx.showToast({ title: '客服电话暂未配置', icon: 'none' })
-      return
-    }
-
     wx.showModal({
       title: '关于泡泡fight洗车',
       content: '自助洗车小程序用户端，支持扫码洗车、卡券支付和附近洗车点查询。',
+      showCancel: false
+    })
+  },
+
+  handleContactError(event) {
+    const detail = (event && event.detail) || {}
+    if (/cancel/i.test(String(detail.errMsg || ''))) return
+    wx.showModal({
+      title: '暂时无法打开客服',
+      content: '请检查微信版本和网络后重试。若仍无法进入，请确认小程序平台客服已开通。',
       showCancel: false
     })
   },

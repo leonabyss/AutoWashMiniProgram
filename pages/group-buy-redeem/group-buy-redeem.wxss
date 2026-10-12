@@ -1,0 +1,20 @@
+page { background: #f6f8fc; }
+.redeem-page { --brand-bg: #ffd640; --brand-text: #30260c; min-height: 100vh; padding: 28rpx 28rpx calc(40rpx + env(safe-area-inset-bottom)); }
+.platform-douyin { --brand-bg: #17181e; --brand-text: #ffffff; }
+.platform-header { padding: 36rpx 30rpx; border-radius: 16rpx; color: var(--brand-text); background: var(--brand-bg); }
+.platform-name { font-size: 28rpx; font-weight: 700; }
+.platform-douyin .platform-name { text-shadow: -2rpx 0 #25f4ee, 2rpx 0 #fe2c55; }
+.header-title { margin-top: 16rpx; font-size: 40rpx; font-weight: 700; }
+.site-name { margin-top: 20rpx; font-size: 26rpx; line-height: 1.5; overflow-wrap: anywhere; }
+.redeem-form { margin-top: 28rpx; padding: 30rpx; border-radius: 16rpx; background: #ffffff; }
+.field-label { margin: 24rpx 0 18rpx; color: #172640; font-size: 28rpx; font-weight: 700; }
+.code-input { width: 100%; height: 96rpx; padding: 0 20rpx; border: 2rpx solid #d4dce8; border-radius: 12rpx; color: #172640; font-size: 28rpx; background: #f8fafc; }
+.notice { padding: 20rpx; border-radius: 8rpx; color: #84500c; font-size: 25rpx; line-height: 1.6; background: #fff5df; }
+.error-text { margin-top: 20rpx; color: #c12b37; font-size: 26rpx; line-height: 1.6; overflow-wrap: anywhere; }
+.submit-btn, .retry-btn, .back-btn { display: flex; width: 100%; min-height: 92rpx; padding: 18rpx 16rpx; align-items: center; justify-content: center; border-radius: 12rpx; font-size: 30rpx; line-height: 1.4; }
+.submit-btn { margin-top: 30rpx; color: var(--brand-text); background: var(--brand-bg); font-weight: 700; }
+.platform-douyin .submit-btn { border-bottom: 5rpx solid #fe2c55; }
+.retry-btn { margin-top: 30rpx; color: #1262e8; background: #edf5ff; }
+.back-btn { margin-top: 16rpx; color: #526070; background: transparent; font-size: 27rpx; }
+.submit-btn[disabled] { opacity: .55; color: var(--brand-text); background: var(--brand-bg); }
+.entry-loading { padding: 60rpx 20rpx; color: #526070; text-align: center; font-size: 28rpx; }

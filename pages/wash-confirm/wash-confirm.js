@@ -1,4 +1,5 @@
 const api = require('../../utils/api')
+const { registerOrder } = require('../../utils/review-mode')
 const { STORAGE_KEYS } = require('../../utils/config')
 const { getCurrentLocation } = require('../../utils/location')
 const { centToYuan, parseMachineMid, secToText } = require('../../utils/format')
@@ -91,6 +92,28 @@ function normalizePaymentSite(item) {
   })
 }
 
+function pricingNumber(value) {
+  if (value === undefined || value === null || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) && number >= 0 ? number : null
+}
+
+function formatSitePricing(pricing) {
+  const source = pricing || {}
+  const durationSec = pricingNumber(source.defaultDurationSec)
+  const startMinutes = pricingNumber(source.startMinutes)
+  const minutes = startMinutes !== null ? startMinutes : (durationSec !== null ? durationSec / 60 : null)
+  const startPrice = pricingNumber(source.startPriceCent)
+  const amount = startPrice !== null ? startPrice : pricingNumber(source.defaultAmountCent)
+  const minutePrice = pricingNumber(source.minutePriceCent)
+  const rate = minutePrice !== null ? `${centToYuan(minutePrice)}元/分钟` : ''
+  if (minutes !== null && minutes > 0 && amount !== null) {
+    return `${minutes}分钟内${centToYuan(amount)}元，${rate ? `超出按${rate}计费` : '超出费用以场地规则为准'}`
+  }
+  if (rate) return `按${rate}计费`
+  return '计费信息暂不可用，请重新扫码'
+}
+
 function toOnlineText(status) {
   const value = String(status || '').toLowerCase()
 
@@ -108,6 +131,7 @@ Page({
       id: '',
       siteId: '',
       siteName: '',
+      servicePhone: '',
       name: '',
       status: '',
       onlineStatus: '',
@@ -118,6 +142,7 @@ Page({
       maxMinutes: 0
     },
     scanInfo: null,
+    reviewMode: false,
     mid: '',
     qrId: '',
     priceText: '加载中',
@@ -140,7 +165,11 @@ Page({
     assetPanelTitle: '',
     locationConfirmed: false,
     starting: false,
+    contactingService: false,
     rulesExpanded: true,
+    groupBuyEntries: [],
+    redeemedPlatforms: {},
+    groupBuyError: false,
     payMethods: [
       {
         key: 'coupon_pack',
@@ -155,10 +184,34 @@ Page({
     ]
   },
 
-  onLoad() {
+  onLoad(options) {
     this.setData({
       serviceTop: 34
     })
+
+    if (options && options.review === '1') {
+      this.setData({ reviewMode: true })
+      api.review.status().then((status) => {
+        if (!status.reviewMode || status.expired || !status.enabled) throw new Error('审核体验未启用，请返回首页退出体验或重新领取')
+        const scan = wx.getStorageSync('reviewScanInfo')
+        if (!scan || scan.reviewMode !== true || scan.scanSuccess !== true) throw new Error('缺少模拟扫码信息，请重新扫码')
+        this.setData({
+          scanInfo: scan,
+          machine: {
+            siteName: '审核体验模拟场地', name: scan.machine.name,
+            onlineStatus: scan.machine.onlineStatus, onlineText: '模拟上线', available: true,
+            balanceRate: '每分钟1元，无起步价，暂停不计费',
+            cardRule: '每分钟1元，无起步价，暂停不计费', maxMinutes: 0
+          },
+          walletBalanceCent: status.balanceCent,
+          walletBalanceText: centToYuan(status.balanceCent),
+          selectedPayMethod: 'wallet',
+          selectedPayment: { uiKey: 'wallet', payMethod: 'wallet', desc: '虚拟体验余额' },
+          paymentSitesLoading: false
+        }, () => this.refreshPayMethods())
+      }).catch((err) => this.showOrderError(err))
+      return
+    }
 
     api.wallet.get()
       .then((wallet) => {
@@ -176,6 +229,54 @@ Page({
       })
   },
 
+  onShow() {
+    if (this.data.machine.siteId) this.loadGroupBuyEntries()
+  },
+
+  onUnload() {
+    this.groupBuyRequestVersion = (this.groupBuyRequestVersion || 0) + 1
+  },
+
+  buildGroupBuyEntries(result) {
+    return ['meituan', 'douyin']
+      .filter((platform) => result && result[platform] && result[platform].showButton === true)
+      .map((platform) => ({ platform, title: platform === 'meituan' ? '美团核销' : '抖音核销', redeemed: !!this.data.redeemedPlatforms[platform] }))
+  },
+
+  loadGroupBuyEntries() {
+    const siteId = this.data.machine.siteId
+    if (!siteId) return
+    const version = this.groupBuyRequestVersion = (this.groupBuyRequestVersion || 0) + 1
+    this.setData({ groupBuyEntries: this.buildGroupBuyEntries(null), groupBuyError: false })
+    return api.groupBuy.entries(siteId)
+      .then((result) => {
+        if (version !== this.groupBuyRequestVersion || String(siteId) !== String(this.data.machine.siteId)) return
+        const groupBuyEntries = this.buildGroupBuyEntries(result)
+        this.setData({ groupBuyEntries })
+      })
+      .catch(() => {
+        if (version === this.groupBuyRequestVersion) this.setData({ groupBuyEntries: this.buildGroupBuyEntries(null), groupBuyError: true })
+      })
+  },
+
+  openGroupBuy(event) {
+    const platform = event.currentTarget.dataset.platform
+    if (!this.data.groupBuyEntries.some((item) => item.platform === platform)) return
+    const siteId = this.data.machine.siteId
+    wx.navigateTo({
+      url: `/pages/group-buy-redeem/group-buy-redeem?siteId=${encodeURIComponent(siteId)}&platform=${platform}`,
+      events: {
+        redeemed: (receipt) => {
+          if (String(receipt.siteId) !== String(this.data.machine.siteId) || receipt.platform !== platform) return
+          this.setData({ redeemedPlatforms: Object.assign({}, this.data.redeemedPlatforms, { [platform]: true }) })
+          this.loadGroupBuyEntries()
+          this.loadAccountAssets(this.data.scanInfo)
+          wx.showToast({ title: '验券成功', icon: 'success' })
+        }
+      }
+    })
+  },
+
   backHome() {
     wx.navigateBack({
       fail() {
@@ -186,11 +287,45 @@ Page({
     })
   },
 
-  contactService() {
-    wx.showToast({
-      title: '客服电话待接入',
-      icon: 'none'
-    })
+  async contactService() {
+    if (this.data.contactingService) return
+    this.setData({ contactingService: true })
+    try {
+      let phone = this.data.machine.servicePhone
+      if (!phone && this.data.machine.siteId) {
+        const site = await api.sites.detail(this.data.machine.siteId)
+        // Public site APIs must expose the franchisee phone, not the user's phone.
+        phone = site && site.franchiseePartnerPhone
+      }
+      const phoneNumber = String(phone || '').trim().replace(/[\s-]/g, '')
+      if (!phoneNumber) {
+        wx.showModal({
+          title: '联系官方客服',
+          content: '该场地暂未绑定客服电话。如需帮助，可前往“我的”页面，点击“联系客服”与官方客服沟通。',
+          confirmText: '前往我的',
+          cancelText: '暂不前往',
+          success(res) {
+            if (res.confirm) {
+              wx.switchTab({ url: '/pages/mine/mine' })
+            }
+          }
+        })
+        return
+      }
+      if (!/^\+?\d{6,20}$/.test(phoneNumber)) {
+        wx.showToast({ title: '场地联系电话无效，请联系平台处理', icon: 'none' })
+        return
+      }
+      await new Promise((resolve, reject) => {
+        wx.makePhoneCall({ phoneNumber, success: resolve, fail: reject })
+      })
+    } catch (err) {
+      if (!/cancel/i.test(String(err.errMsg || ''))) {
+        wx.showToast({ title: err.errMsg ? '无法拨号，请检查设备是否支持电话功能' : (err.message || '联系电话获取失败，请稍后重试'), icon: 'none' })
+      }
+    } finally {
+      this.setData({ contactingService: false })
+    }
   },
 
   toggleRules() {
@@ -253,6 +388,7 @@ Page({
 
     const defaultAmountCent = (scanInfo.pricing && scanInfo.pricing.defaultAmountCent) || 0
     const defaultDurationSec = (scanInfo.pricing && scanInfo.pricing.defaultDurationSec) || 0
+    const billingRule = formatSitePricing(scanInfo.pricing)
     this.setData({
       scanInfo,
       mid: scanInfo.mid || scanInfo.qrId,
@@ -261,13 +397,14 @@ Page({
         id: scanInfo.machine.machineId,
         siteId: scanInfo.site && (scanInfo.site.siteId || scanInfo.site.id),
         siteName: scanInfo.site.name,
+        servicePhone: scanInfo.site.franchiseePartnerPhone || '',
         name: scanInfo.machine.name,
         status: scanInfo.machine.machineStatus,
         onlineStatus: scanInfo.machine.onlineStatus,
         onlineText: toOnlineText(scanInfo.machine.onlineStatus),
         available: scanInfo.machine.available,
-        balanceRate: defaultDurationSec ? `${centToYuan(defaultAmountCent)}元/${Math.round(defaultDurationSec / 60)}分钟` : '',
-        cardRule: defaultDurationSec ? `${Math.round(defaultDurationSec / 60)}分钟内${centToYuan(defaultAmountCent)}元` : '',
+        balanceRate: billingRule,
+        cardRule: billingRule,
         maxMinutes: Math.round(Number((scanInfo.pricing && scanInfo.pricing.maxDurationSec) || 0) / 60)
       },
       priceText: `${centToYuan(defaultAmountCent)}元`,
@@ -278,10 +415,16 @@ Page({
     })
 
     this.loadAccountAssets(scanInfo)
+    this.setData({ redeemedPlatforms: {} })
+    this.loadGroupBuyEntries()
   },
 
   choosePayMethod(event) {
     const key = event.currentTarget.dataset.key
+    if (this.data.reviewMode && key !== 'wallet') {
+      wx.showModal({ title: '审核体验结算', content: '此体验仅使用虚拟余额，不消耗真实卡券。退出体验后可使用正式卡券。', showCancel: false })
+      return
+    }
     const target = this.data.payMethods.find((item) => item.key === key)
 
     if (!target || target.disabled) return
@@ -420,7 +563,7 @@ Page({
 
     if (!coupon || !coupon.canUse) return
     if (coupon.preview) {
-      wx.showToast({ title: '这是样式预览数据', icon: 'none' })
+      wx.showToast({ title: '该洗车券暂不可用，请刷新后重试', icon: 'none' })
       return
     }
 
@@ -439,7 +582,7 @@ Page({
 
     if (!card || !card.canUse) return
     if (card.preview) {
-      wx.showToast({ title: '这是样式预览数据', icon: 'none' })
+      wx.showToast({ title: '该洗车卡暂不可用，请刷新后重试', icon: 'none' })
       return
     }
 
@@ -460,7 +603,7 @@ Page({
 
     if (!card || !card.canUse) return
     if (card.preview) {
-      wx.showToast({ title: '这是样式预览数据', icon: 'none' })
+      wx.showToast({ title: '该卡暂不可用，请刷新后重试', icon: 'none' })
       return
     }
 
@@ -477,6 +620,16 @@ Page({
   },
 
   startWash() {
+    if (this.data.starting) return
+    if (this.data.reviewMode) {
+      if (!this.data.scanInfo || !this.data.selectedPayment) return
+      this.setData({ starting: true })
+      wx.showLoading({ title: '创建体验订单' })
+      api.review.createOrder().then((order) => navigateToOrder(registerOrder(order)))
+        .catch((err) => this.showOrderError(err))
+        .finally(() => { wx.hideLoading(); this.setData({ starting: false }) })
+      return
+    }
     const scanInfo = this.data.scanInfo
     const method = this.data.selectedPayment
 
@@ -646,6 +799,10 @@ Page({
   },
 
   rechargeWallet() {
+    if (this.data.reviewMode) {
+      wx.navigateTo({ url: '/pages/buy-card/buy-card?category=wash-card' })
+      return
+    }
     const packages = this.data.rechargePackages
     const rechargeSite = this.data.rechargeSite
 

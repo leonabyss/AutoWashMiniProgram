@@ -2,6 +2,7 @@ const api = require('../../utils/api')
 const { IMAGE_BASE_URL, STORAGE_KEYS } = require('../../utils/config')
 const { centToYuan, secToText, makeClientRequestId } = require('../../utils/format')
 const { redirectToOrder } = require('../../utils/wash-route')
+const { isReviewOrder } = require('../../utils/review-mode')
 
 const guestSummary = {
   icon: 'M',
@@ -117,7 +118,7 @@ function buildAccountSummary(wallet, cards, coupons) {
       }
     }
 
-    return { icon: 'VIP', prefix: 'VIP还剩', value: String(getExpireDays(vipCard.validTo)), unit: '天到期' }
+    return { icon: 'VIP', prefix: '会员还剩', value: String(getExpireDays(vipCard.validTo)), unit: '天到期' }
   }
 
   return {
@@ -162,8 +163,10 @@ function getWashingSizeClass(heightRpx) {
 }
 
 Page({
+  behaviors: [require('../../utils/wash-network'), require('../../utils/fault-sheet')],
   data: {
     orderNo: '',
+    reviewMode: false,
     accountSummary: guestSummary,
     seconds: 0,
     displayClock: '00:00',
@@ -194,19 +197,21 @@ Page({
       return
     }
 
-    this.setData({ orderNo })
+    this.setData({ orderNo, reviewMode: isReviewOrder(orderNo) })
+    this.startNetworkWatch()
     this.updateWashingViewport()
     this.keepScreenOn(true)
     this.loadAccountSummary()
     this.pollStatus()
     this.timer = setInterval(() => {
       this.pollStatus()
-    }, 3000)
+    }, this.data.reviewMode ? 2000 : 3000)
   },
 
   onShow() {
     this.updateWashingViewport()
     this.keepScreenOn(true)
+    this.pollStatus()
   },
 
   onResize() {
@@ -214,6 +219,7 @@ Page({
   },
 
   onUnload() {
+    this.stopNetworkWatch()
     if (this.timer) {
       clearInterval(this.timer)
     }
@@ -243,6 +249,11 @@ Page({
   },
 
   loadAccountSummary() {
+    if (this.data.reviewMode) {
+      return api.review.status().then((status) => {
+        this.setData({ accountSummary: { icon: 'M', prefix: '体验余额', value: centToYuan(status.balanceCent), unit: '元' } })
+      }).catch(() => {})
+    }
     Promise.all([
       api.wallet.get().catch(() => null),
       api.member.cards().catch(() => []),
@@ -257,10 +268,19 @@ Page({
   },
 
   pollStatus() {
-    if (!this.data.orderNo) return
+    if (!this.data.orderNo || this.data.networkOffline || this.statusRefreshing) return
+    this.statusRefreshing = true
 
     api.wash.status(this.data.orderNo)
       .then((status) => {
+        this.markNetworkSynced()
+        if (this.data.reviewMode) {
+          this.setData({ accountSummary: { icon: 'M', prefix: '可用体验余额', value: centToYuan(status.availableBalanceCent), unit: '元' } })
+          if (status.lowBalanceWarning && !this.reviewBalanceWarned) {
+            this.reviewBalanceWarned = true
+            wx.showModal({ title: '体验余额不足', content: '剩余体验余额不足5分钟，耗尽后模拟订单会自动结束。', showCancel: false })
+          }
+        }
         const washStatus = String((status && status.washStatus) || '').toLowerCase()
 
         if (washStatus === 'starting') {
@@ -293,15 +313,15 @@ Page({
           this.goToFinishPage()
         }
       })
-      .catch((err) => {
-        wx.showToast({
-          title: err.message || '状态刷新失败',
-          icon: 'none'
-        })
-      })
+      .catch((err) => this.markNetworkFailure(err))
+      .finally(() => { this.statusRefreshing = false })
   },
 
   openFaultReport() {
+    if (this.data.reviewMode) {
+      wx.showModal({ title: '模拟设备', content: '审核体验不涉及真实机器，故障上报仅用于正式洗车订单。', showCancel: false })
+      return
+    }
     const reports = wx.getStorageSync(STORAGE_KEYS.faultReports) || []
     const reported = reports.some((item) => String(item.orderNo) === String(this.data.orderNo))
     if (this.data.faultReported || reported) {
@@ -309,6 +329,7 @@ Page({
       wx.showModal({ title: '已上报', content: '本订单的故障已提交，请等待核查。同一订单仅保留首次上报内容。', showCancel: false })
       return
     }
+    this.resetFaultSheet()
     this.setData({ faultPanelVisible: true })
   },
 
@@ -322,9 +343,7 @@ Page({
   },
 
   closeFaultReport() {
-    if (this.data.reporting) return
-
-    this.setData({ faultPanelVisible: false })
+    this.dismissFaultSheet()
   },
 
   toggleFaultOption(event) {
@@ -425,6 +444,7 @@ Page({
 
   finishWash() {
     if (!this.data.orderNo || this.data.stopping) return
+    if (!this.canSendWashCommand()) return
 
     this.setData({ stopping: true })
     wx.showLoading({ title: '结束洗车' })
@@ -435,6 +455,7 @@ Page({
     })
       .then(() => this.waitForFinished())
       .catch((err) => {
+        if (err.code === 'NETWORK_ERROR') this.markNetworkFailure()
         wx.showToast({
           title: err.code === 'SETTLEMENT_PENDING'
             ? '订单正在结束结算，请稍候'

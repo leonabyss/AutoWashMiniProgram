@@ -36,14 +36,14 @@
       >
         <view class="search-result-copy">
           <text class="search-result-name">{{item.name}}</text>
-          <text class="search-result-address">{{item.regionText}} {{item.address}}</text>
+          <text class="search-result-address">{{item.address || '暂无地址'}}</text>
         </view>
         <view class="search-result-meta">
           <text>{{item.distanceText}}</text>
           <text>{{item.availableMachineCount}}台可用</text>
         </view>
       </button>
-      <view wx:if="{{!searchLoading && !searchResults.length}}" class="search-result-empty">没有找到符合条件的场地</view>
+      <view wx:if="{{!searchLoading && !searchResults.length}}" class="search-result-empty">{{searchTitle === '近期洗过的场地' ? '暂无洗车记录' : '没有找到符合条件的场地'}}</view>
     </view>
 
     <view class="filter-row">
@@ -81,7 +81,7 @@
     bindmarkertap="onMarkerTap"
     bindregionchange="onRegionChange"
   >
-    <cover-view class="locate-control" bindtap="moveToCurrentLocation">
+    <cover-view wx:if="{{!detailVisible}}" class="locate-control" bindtap="moveToCurrentLocation">
       <cover-image class="locate-icon" src="/assets/icons/lucide-locate-fixed.png"></cover-image>
     </cover-view>
   </map>
@@ -89,8 +89,10 @@
   <view wx:if="{{loading}}" class="map-loading">正在获取附近洗车点...</view>
 
   <view wx:if="{{detailVisible && selectedStation}}" class="site-detail-mask" bindtap="closeDetail" catchtouchmove="noop">
-    <view class="site-detail-page" catchtap="noop">
-      <view class="sheet-handle"></view>
+    <view class="site-detail-page {{sheetDragging ? 'is-dragging' : ''}}" style="transform: translateY({{sheetOffset}}px);" catchtap="noop" bindtouchstart="onSheetTouchStart" bindtouchmove="onSheetTouchMove" bindtouchend="onSheetTouchEnd" bindtouchcancel="onSheetTouchCancel">
+      <view class="sheet-grip" data-grip="true" catchtouchstart="onSheetTouchStart" catchtouchmove="onSheetTouchMove" catchtouchend="onSheetTouchEnd" catchtouchcancel="onSheetTouchCancel">
+        <view class="sheet-handle"></view>
+      </view>
 
       <view class="site-photo-frame">
         <swiper
@@ -120,6 +122,7 @@
         <view wx:if="{{selectedStation.imageUrls.length > 1}}" class="photo-count">{{photoIndex + 1}}/{{selectedStation.imageUrls.length}}</view>
       </view>
 
+      <scroll-view class="site-detail-scroll" scroll-y="{{!sheetDragging}}" bindscroll="onDetailScroll" show-scrollbar="{{false}}">
       <view class="site-info">
         <view class="site-title-row">
           <view class="site-title-copy">
@@ -164,12 +167,12 @@
         <view class="detail-divider"></view>
 
         <view class="section-title">支持计费方式</view>
-        <view class="pay-support-grid">
-          <view wx:for="{{selectedStation.paySupports}}" wx:key="key" class="pay-support-item {{item.supported ? 'supported' : 'unsupported'}}">
+        <view wx:if="{{selectedStation.paySupports.length}}" class="pay-support-grid">
+          <view wx:for="{{selectedStation.paySupports}}" wx:key="key" class="pay-support-item">
             <text>{{item.label}}</text>
-            <text>{{item.supported ? '支持' : '不支持'}}</text>
           </view>
         </view>
+        <view wx:else class="billing-empty">暂无计费方式信息</view>
 
         <view class="detail-divider"></view>
 
@@ -187,6 +190,8 @@
           <text class="nav-arrow">导航</text>
         </button>
 
+      </view>
+      </scroll-view>
         <view class="detail-footer">
           <button class="share-site-btn" open-type="share">
             <image src="/assets/icons/lucide-share-2.svg" mode="aspectFit"></image>
@@ -197,7 +202,6 @@
             <text>前往洗车点</text>
           </button>
         </view>
-      </view>
     </view>
   </view>
 

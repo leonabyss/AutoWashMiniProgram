@@ -1,4 +1,6 @@
-<view class="ready-page">
+<view class="ready-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <view wx:if="{{networkNotice}}" class="wash-network-notice" role="alert">{{networkNotice}}</view>
   <view class="progress-strip">
     <view class="progress-line"></view>
 
@@ -29,7 +31,7 @@
 
   <view class="status-strip">
     <view class="status-pulse"></view>
-    <text>{{statusText}} · 状态每3秒自动更新</text>
+    <text>{{statusText}} · 状态每{{reviewMode ? '2' : '3'}}秒自动更新</text>
   </view>
 
   <view class="gun-stage">
@@ -42,7 +44,7 @@
 
   <view class="ready-content">
     <view class="ready-heading">拿起水枪 开始洗车</view>
-    <view class="ready-subtitle">按下水枪上的功能键，设备将上报实际使用状态</view>
+    <view class="ready-subtitle">{{reviewMode ? '点击下方远程控制，体验模拟冲水、泡沫和停止' : '按下水枪上的功能键，设备将上报实际使用状态'}}</view>
 
     <view class="instruction-list">
       <view class="instruction-row">

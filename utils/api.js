@@ -1,4 +1,5 @@
-const { request } = require('./request')
+const { request, ensureLogin } = require('./request')
+const { isReviewOrder, registerOrder } = require('./review-mode')
 
 function queryString(params) {
   return Object.keys(params || {})
@@ -13,6 +14,18 @@ function withQuery(url, params) {
 }
 
 const api = {
+  review: {
+    status() { return request({ url: '/mini/review/status' }) },
+    claim(code) { return request({ url: '/mini/review/claim', method: 'POST', data: { code } }) },
+    scan() { return request({ url: '/mini/review/scan/resolve', method: 'POST' }) },
+    createOrder() { return request({ url: '/mini/review/wash/orders', method: 'POST' }) },
+    orderStatus(orderNo) { return request({ url: `/mini/review/wash/orders/${encodeURIComponent(orderNo)}/status` }) },
+    start(orderNo) { return request({ url: `/mini/review/wash/orders/${encodeURIComponent(orderNo)}/start`, method: 'POST' }) },
+    control(orderNo, functionName) { return request({ url: `/mini/review/wash/orders/${encodeURIComponent(orderNo)}/remote-control`, method: 'POST', data: { function: functionName } }) },
+    pause(orderNo) { return request({ url: `/mini/review/wash/orders/${encodeURIComponent(orderNo)}/pause`, method: 'POST' }) },
+    stop(orderNo) { return request({ url: `/mini/review/wash/orders/${encodeURIComponent(orderNo)}/stop`, method: 'POST' }) },
+    exit() { return request({ url: '/mini/review/exit', method: 'POST' }) }
+  },
   cms: {
     home() {
       return request({ url: '/mini/cms/home', auth: false })
@@ -43,6 +56,9 @@ const api = {
     },
     updateMe(data) {
       return request({ url: '/mini/users/me', method: 'PUT', data })
+    },
+    uploadAvatar(filePath) {
+      return require('./avatar-upload')(filePath)
     },
     bindPhone(data) {
       return request({ url: '/mini/users/me/phone', method: 'POST', data })
@@ -105,13 +121,13 @@ const api = {
       return request({ url: withQuery('/mini/sites/search', params) })
     },
     recent(params) {
-      return request({ url: withQuery('/mini/sites/recent', params) })
+      return ensureLogin().then(() => request({ url: withQuery('/mini/sites/recent', params) }))
     },
     mapMarkers(params) {
       return request({ url: withQuery('/mini/sites/map-markers', params) })
     },
     detail(siteId) {
-      return request({ url: `/mini/sites/${siteId}` })
+      return request({ url: `/mini/sites/${siteId}`, auth: false })
     },
     machines(siteId) {
       return request({ url: `/mini/sites/${siteId}/machines` })
@@ -124,6 +140,15 @@ const api = {
     },
     districts(cityId) {
       return request({ url: withQuery('/mini/regions/districts', { cityId }), auth: false })
+    }
+  },
+
+  groupBuy: {
+    entries(siteId) {
+      return request({ url: `/mini/sites/${encodeURIComponent(siteId)}/group-buy`, auth: false })
+    },
+    redeem(data) {
+      return request({ url: '/mini/group-buy/redemptions', method: 'POST', data })
     }
   },
 
@@ -144,33 +169,51 @@ const api = {
       return request({ url: '/mini/wash/resume' })
     },
     detail(orderNo) {
+      if (isReviewOrder(orderNo)) return api.review.orderStatus(orderNo).then(registerOrder)
       return request({ url: `/mini/wash/orders/${orderNo}` })
     },
     pay(orderNo, data) {
+      if (isReviewOrder(orderNo)) return Promise.reject(new Error('审核体验不需要真实支付'))
       return request({ url: `/mini/wash/orders/${orderNo}/pay`, method: 'POST', data })
     },
     start(orderNo, data) {
+      if (isReviewOrder(orderNo)) return api.review.start(orderNo).then(registerOrder)
       return request({ url: `/mini/wash/orders/${orderNo}/start`, method: 'POST', data })
     },
     remoteControl(orderNo, data) {
+      if (isReviewOrder(orderNo)) {
+        const action = data && data.action
+        if (action === 'stop') return api.review.pause(orderNo).then(registerOrder)
+        const functionName = action === 'clean_water' ? 'water' : action
+        if (['water', 'foam', 'vacuum', 'air', 'wax', 'glass_water'].indexOf(functionName) < 0) {
+          return Promise.reject(new Error('请选择有效的洗车功能'))
+        }
+        return api.review.control(orderNo, functionName).then(registerOrder)
+      }
       return request({ url: `/mini/wash/orders/${orderNo}/remote-control`, method: 'POST', data })
     },
     control(orderNo, data) {
+      if (isReviewOrder(orderNo)) return api.wash.remoteControl(orderNo, data)
       return request({ url: `/mini/wash/orders/${orderNo}/start`, method: 'POST', data })
     },
     water(orderNo, data) {
+      if (isReviewOrder(orderNo)) return api.review.control(orderNo, 'water').then(registerOrder)
       return request({ url: `/mini/wash/orders/${orderNo}/start`, method: 'POST', data })
     },
     foam(orderNo, data) {
+      if (isReviewOrder(orderNo)) return api.review.control(orderNo, 'foam').then(registerOrder)
       return request({ url: `/mini/wash/orders/${orderNo}/start`, method: 'POST', data })
     },
     stop(orderNo, data) {
+      if (isReviewOrder(orderNo)) return api.review.stop(orderNo).then(registerOrder)
       return request({ url: `/mini/wash/orders/${orderNo}/stop`, method: 'POST', data })
     },
     status(orderNo) {
+      if (isReviewOrder(orderNo)) return api.review.orderStatus(orderNo).then(registerOrder)
       return request({ url: `/mini/wash/orders/${orderNo}/status` })
     },
     flows(orderNo) {
+      if (isReviewOrder(orderNo)) return Promise.reject(new Error('模拟订单不提供真实设备流水'))
       return request({ url: `/mini/wash/orders/${orderNo}/flows` })
     },
     list(params) {
@@ -259,9 +302,6 @@ const api = {
     },
     confirmPayment(payOrderNo) {
       return request({ url: `/mini/payments/${payOrderNo}/confirm`, method: 'POST' })
-    },
-    mockConfirmPayment(payOrderNo) {
-      return request({ url: `/mini/payments/${payOrderNo}/mock-confirm`, method: 'POST' })
     }
   }
 }

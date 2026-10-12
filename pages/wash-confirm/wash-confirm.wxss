@@ -3,10 +3,16 @@ page {
 }
 
 .confirm-page {
+  --coupon-icon-background: #eaf2ff;
+  --wallet-icon-background: #fff2e9;
+  --coupon-icon-color: #1262e8;
+  --wallet-icon-color: #ff6b22;
   display: flex;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
-  max-width: 100vw;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   flex-direction: column;
   overflow: hidden;
   color: #172033;
@@ -294,13 +300,26 @@ page {
 }
 
 .settlement-section {
-  display: flex;
+  display: block;
   flex: 1;
-  min-height: 278rpx;
-  padding: 18rpx 28rpx 12rpx;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  box-sizing: border-box;
   flex-direction: column;
   overflow: hidden;
   background: #ffffff;
+}
+
+.settlement-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 18rpx 28rpx 12rpx;
+  box-sizing: border-box;
 }
 
 .section-title {
@@ -313,7 +332,9 @@ page {
 
 .settlement-list {
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
   margin-top: 14rpx;
   flex-direction: column;
   justify-content: flex-start;
@@ -323,7 +344,11 @@ page {
 .settlement-row {
   display: flex;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   min-height: 112rpx;
+  flex-shrink: 0;
   margin: 0;
   padding: 0;
   align-items: stretch;
@@ -348,6 +373,12 @@ page {
   background: #f6f9ff;
 }
 
+.coupon-row { border: 1rpx solid var(--coupon-icon-color); }
+.wallet-row { border: 1rpx solid var(--wallet-icon-color); }
+.coupon-row.active { border-color: var(--coupon-icon-color); background: #f6f9ff; }
+.wallet-row.active { border-color: var(--wallet-icon-color); background: #fff8f2; }
+.wallet-row.active .method-radio { border-color: #ff6b22; background: #ff6b22; }
+
 .settlement-hover {
   background: #f0f5ff;
 }
@@ -368,11 +399,11 @@ page {
 }
 
 .coupon-icon-wrap {
-  background: #eaf2ff;
+  background: var(--coupon-icon-background);
 }
 
 .wallet-icon-wrap {
-  background: #fff2e9;
+  background: var(--wallet-icon-background);
 }
 
 .method-copy {
@@ -507,6 +538,66 @@ page {
 .wallet-select .method-radio {
   margin-left: 14rpx;
 }
+
+.wallet-select {
+  padding-top: 14rpx;
+  padding-bottom: 14rpx;
+}
+
+.wallet-pricing {
+  margin-top: 6rpx;
+  color: #c75516;
+  font-size: 22rpx;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.group-buy-actions {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 18rpx;
+  padding-bottom: 8rpx;
+}
+
+.group-buy-btn {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 86rpx;
+  padding: 10rpx 16rpx;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  border: 3rpx solid transparent;
+  border-radius: 22rpx;
+  overflow: hidden;
+  font-size: 28rpx;
+  line-height: 1.3;
+}
+
+.group-buy-btn.platform-meituan { color: #30260c; background: #ffdc3a; }
+.group-buy-btn.platform-douyin { color: #ffffff; background: #0c0d13; border-color: #282932; }
+.platform-logo { position: relative; z-index: 1; width: 56rpx; height: 56rpx; flex: 0 0 56rpx; border-radius: 12rpx; }
+.platform-divider { position: relative; z-index: 1; width: 2rpx; height: 40rpx; flex: 0 0 2rpx; background: rgba(48, 38, 12, .15); }
+.platform-douyin .platform-divider { background: rgba(255, 255, 255, .14); }
+.group-buy-copy { position: relative; z-index: 1; display: flex; min-width: 0; flex-direction: column; gap: 4rpx; align-items: center; font-weight: 700; }
+.platform-chevron { position: relative; z-index: 1; width: 20rpx; height: 28rpx; flex: 0 0 20rpx; }
+.platform-watermark { position: absolute; right: -8rpx; bottom: -12rpx; width: 90rpx; height: 90rpx; opacity: .17; pointer-events: none; }
+.redeemed-label { font-size: 20rpx; font-weight: 400; }
+.group-buy-btn.redeemed { border-color: #1262e8; box-shadow: 0 0 0 4rpx #e3edff; }
+.redeemed-check { position: relative; z-index: 1; width: 24rpx; height: 24rpx; flex: 0 0 24rpx; border-radius: 50%; background: #ffffff; }
+.group-buy-hover { opacity: .8; }
+.group-buy-error { padding: 16rpx 0; color: #667085; font-size: 24rpx; line-height: 1.5; }
 
 .fixed-action {
   flex: 0 0 auto;
@@ -870,8 +961,7 @@ page {
     padding-bottom: 14rpx;
   }
 
-  .settlement-section {
-    min-height: 246rpx;
+  .settlement-content {
     padding-top: 12rpx;
   }
 

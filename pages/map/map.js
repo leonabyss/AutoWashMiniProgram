@@ -1,6 +1,6 @@
 const api = require('../../utils/api')
 const { ensurePhoneBound } = require('../../utils/auth')
-const { ensureLogin } = require('../../utils/request')
+const { ensureLogin, hasStoredSession } = require('../../utils/request')
 const { API_BASE_URL } = require('../../utils/config')
 const { meterToDistance } = require('../../utils/format')
 
@@ -236,64 +236,17 @@ function getSiteImage(site) {
   return getSiteImages(site)[0]
 }
 
-function getPaySources(site) {
-  const pricing = site.pricing || {}
-  const sources = []
-
-  ;[
-    pricing.supportPayMethods,
-    site.supportPayMethods,
-    site.payMethods,
-    site.supportBillingMethods,
-    site.billingMethods,
-    site.supportCards,
-    site.supportServices
-  ].forEach((list) => {
-    if (Array.isArray(list)) {
-      sources.push(...list.map((item) => String(item).toLowerCase()))
-    }
-  })
-
-  ;(site.availableCards || []).forEach((card) => {
-    sources.push(String(card.cardKind || card.productType || card.productTypeCode || card.name || '').toLowerCase())
-  })
-
-  if ((site.availableCoupons || []).length) {
-    sources.push('coupon')
-  }
-
-  return sources
-}
-
-function hasAny(source, keywords) {
-  return source.some((item) => keywords.some((keyword) => item.indexOf(keyword) >= 0))
-}
-
 function buildPaySupports(site) {
-  const source = getPaySources(site)
-
-  return [
-    {
-      key: 'wash_card',
-      label: '洗车卡',
-      supported: hasAny(source, ['wash_card', 'wallet', 'balance', 'recharge_card', 'stored'])
-    },
-    {
-      key: 'coupon',
-      label: '洗车券',
-      supported: hasAny(source, ['coupon', 'ticket'])
-    },
-    {
-      key: 'single_card',
-      label: '单次卡',
-      supported: hasAny(source, ['single_card', 'single'])
-    },
-    {
-      key: 'member',
-      label: '包月会员',
-      supported: hasAny(source, ['member', 'month', 'monthly', 'season', 'year', 'vip'])
-    }
-  ]
+  const options = Array.isArray(site.billingOptions) ? site.billingOptions : []
+  return options
+    .filter((item) => item && item.supported === true && item.name)
+    .map((item) => ({
+      key: item.code,
+      label: item.name,
+      supported: true,
+      available: item.available === true,
+      unavailableReason: item.unavailableReason || ''
+    }))
 }
 
 function normalizeStation(site, userLocation) {
@@ -359,6 +312,8 @@ Page({
     selectedStation: null,
     photoIndex: 0,
     detailVisible: false,
+    sheetOffset: 0,
+    sheetDragging: false,
     phoneAuthVisible: false,
     loading: false
   },
@@ -372,6 +327,7 @@ Page({
   },
 
   onUnload() {
+    if (this.sheetCloseTimer) clearTimeout(this.sheetCloseTimer)
     if (this.regionTimer) {
       clearTimeout(this.regionTimer)
       this.regionTimer = null
@@ -462,9 +418,9 @@ Page({
   },
 
   onSiteSearchFocus() {
-    this.setData({ searchVisible: true })
+    this.setData({ searchVisible: !!this.data.siteKeyword || hasStoredSession() })
     if (!this.data.siteKeyword && !this.data.searchResults.length) {
-      this.showRecentSites()
+      if (hasStoredSession()) this.showRecentSites()
     }
   },
 
@@ -509,6 +465,22 @@ Page({
   },
 
   showRecentSites() {
+    if (!hasStoredSession()) {
+      wx.showModal({
+        title: '登录后查看',
+        content: '登录后可查看近期洗过的场地，也可以直接搜索洗车点。',
+        confirmText: '微信登录',
+        cancelText: '暂不登录',
+        success: (result) => {
+          if (!result.confirm) return
+          ensureLogin()
+            .then(() => this.showRecentSites())
+            .catch((err) => wx.showToast({ title: err.message || '登录失败，请重试', icon: 'none' }))
+        }
+      })
+      return Promise.resolve()
+    }
+    if (this.siteSearchTimer) clearTimeout(this.siteSearchTimer)
     const requestId = (this.siteSearchRequestId || 0) + 1
     this.siteSearchRequestId = requestId
     const location = this.data.userLocation || {}
@@ -534,8 +506,7 @@ Page({
 
   formatSearchResults(items) {
     return items.map((item) => Object.assign({}, item, {
-      distanceText: item.distanceM === null || item.distanceM === undefined ? '' : meterToDistance(Number(item.distanceM)),
-      regionText: [item.cityName, item.districtName].filter((value) => !!value).join(' ')
+      distanceText: item.distanceM === null || item.distanceM === undefined ? '' : meterToDistance(Number(item.distanceM))
     }))
   },
 
@@ -671,7 +642,7 @@ Page({
       .then(focusLocation)
       .catch((err) => {
         wx.showToast({
-          title: err.errMsg || err.message || '定位失败',
+          title: '定位失败，请检查定位权限和网络',
           icon: 'none'
         })
       })
@@ -823,23 +794,28 @@ Page({
   },
 
   onMarkerTap(event) {
-    const markerId = event.markerId || event.detail.markerId
-    this.selectStation(markerId, true)
+    const markerId = event.markerId !== undefined ? event.markerId : event.detail && event.detail.markerId
+    const station = this.data.stations.find((item) => String(item.markerId) === String(markerId))
+    if (station) this.selectStation(station.siteId, true)
   },
 
-  selectStation(id, showDetail) {
-    const station = this.data.stations.find((item) => (
-      String(item.markerId) === String(id) || String(item.siteId) === String(id)
-    ))
+  selectStation(siteId, showDetail) {
+    const station = this.data.stations.find((item) => String(item.siteId) === String(siteId))
 
     if (!station) return
 
+    if (this.sheetCloseTimer) clearTimeout(this.sheetCloseTimer)
+    this.sheetClosing = false
+    this.sheetTouch = null
+    this.detailScrollTop = 0
     this.setData({
       latitude: station.latitude,
       longitude: station.longitude,
       selectedStation: station,
       photoIndex: 0,
-      detailVisible: !!showDetail
+      detailVisible: !!showDetail,
+      sheetOffset: 0,
+      sheetDragging: false
     })
 
     this.loadSiteDetail(station.siteId)
@@ -851,6 +827,7 @@ Page({
       api.sites.machines(siteId).catch(() => [])
     ])
       .then(([detail, machines]) => {
+        if (!this.data.selectedStation || String(this.data.selectedStation.siteId) !== String(siteId)) return
         const previousCoverImageUrl = this.data.selectedStation && this.data.selectedStation.coverImageUrl
         const previousImageUrls = (this.data.selectedStation && this.data.selectedStation.imageUrls) || []
         const base = Object.assign({}, this.data.selectedStation || {}, detail || {})
@@ -932,8 +909,67 @@ Page({
     })
   },
 
+  onDetailScroll(event) {
+    this.detailScrollTop = Number(event.detail.scrollTop) || 0
+  },
+
+  onSheetTouchStart(event) {
+    if (this.sheetClosing) return
+    const touch = event.touches && event.touches[0]
+    if (!touch || event.touches.length !== 1) return
+    const grip = event.currentTarget.dataset && event.currentTarget.dataset.grip
+    this.sheetTouch = {
+      x: touch.clientX,
+      y: touch.clientY,
+      startedAt: Date.now(),
+      eligible: !!grip || (this.detailScrollTop || 0) <= 2,
+      direction: ''
+    }
+  },
+
+  onSheetTouchMove(event) {
+    const start = this.sheetTouch
+    const touch = event.touches && event.touches[0]
+    if (!start || !start.eligible || !touch || event.touches.length !== 1) return
+    const dx = touch.clientX - start.x
+    const dy = touch.clientY - start.y
+    if (!start.direction && Math.max(Math.abs(dx), Math.abs(dy)) > 8) {
+      start.direction = dy > 0 && dy > Math.abs(dx) ? 'down' : 'other'
+    }
+    if (start.direction !== 'down') return
+    this.setData({ sheetDragging: true, sheetOffset: Math.max(0, dy) })
+  },
+
+  onSheetTouchEnd() {
+    const start = this.sheetTouch
+    this.sheetTouch = null
+    if (!start || !this.data.sheetDragging) return
+    const offset = this.data.sheetOffset
+    const elapsed = Math.max(1, Date.now() - start.startedAt)
+    if (offset >= 100 || (offset >= 40 && offset / elapsed > 0.6)) {
+      this.closeDetail()
+    } else {
+      this.setData({ sheetOffset: 0, sheetDragging: false })
+    }
+  },
+
+  onSheetTouchCancel() {
+    this.sheetTouch = null
+    if (!this.sheetClosing) this.setData({ sheetOffset: 0, sheetDragging: false })
+  },
+
   closeDetail() {
-    this.setData({ detailVisible: false })
+    if (this.sheetClosing || !this.data.detailVisible) return
+    this.sheetClosing = true
+    this.sheetTouch = null
+    const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()
+    this.setData({ sheetOffset: info.windowHeight || 800, sheetDragging: false })
+    this.sheetCloseTimer = setTimeout(() => {
+      this.sheetCloseTimer = null
+      this.sheetClosing = false
+      this.detailScrollTop = 0
+      this.setData({ detailVisible: false, sheetOffset: 0, sheetDragging: false })
+    }, 240)
   },
 
   noop() {},

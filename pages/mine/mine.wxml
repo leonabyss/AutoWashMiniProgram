@@ -1,19 +1,22 @@
 <view
-  class="mine-page {{isPulling ? 'pulling' : ''}}"
+  class="mine-page {{isPulling ? 'pulling' : ''}} {{reviewMode ? 'review-flow-mode' : ''}}"
   bindtouchstart="handleTouchStart"
   bindtouchmove="handleTouchMove"
   bindtouchend="handleTouchEnd"
   bindtouchcancel="handleTouchEnd"
 >
   <view class="blue-shape" style="{{blueShapeStyle}}"></view>
+  <include src="../../components/review-notice/review-notice.wxml" />
 
   <block wx:if="{{hasMineData}}">
   <view class="profile-band" style="{{headerContentStyle}}">
-    <image wx:if="{{user.avatarUrl}}" class="avatar avatar-image" src="{{user.avatarUrl}}" mode="aspectFill"></image>
-    <view wx:else class="avatar">{{avatarText}}</view>
-    <view class="profile-text">
+    <button class="profile-avatar-button" open-type="chooseAvatar" bindchooseavatar="onChooseProfileAvatar" disabled="{{profileSaving}}" aria-label="修改头像">
+      <image wx:if="{{user.avatarUrl}}" class="avatar avatar-image" src="{{user.avatarUrl}}" mode="aspectFill"></image>
+      <view wx:else class="avatar">{{avatarText}}</view>
+    </button>
+    <view class="profile-text" bindtap="openProfileEditor">
       <view class="profile-name">{{user.name}}</view>
-      <view class="profile-phone">{{user.phone}} · {{user.memberLevel}}</view>
+      <view class="profile-phone">{{reviewMode ? '审核体验账号' : user.phone}} · {{user.memberLevel}}</view>
     </view>
   </view>
 
@@ -44,13 +47,26 @@
   </view>
 
   <view class="menu-card white-card">
-    <view wx:for="{{menus}}" wx:key="title" class="weui-cell weui-cell_access menu-row" data-url="{{item.url}}" data-action="{{item.action}}" bindtap="handleMenuTap">
+    <button
+      wx:for="{{menus}}"
+      wx:key="title"
+      class="weui-cell weui-cell_access menu-row"
+      open-type="{{item.action === 'contact' ? 'contact' : ''}}"
+      session-from="{{item.action === 'contact' ? 'mine_platform_support' : ''}}"
+      data-url="{{item.url}}"
+      data-action="{{item.action}}"
+      bindtap="handleMenuTap"
+      binderror="handleContactError"
+      hover-class="menu-row-hover"
+      aria-label="{{item.title}}"
+    >
       <text>{{item.title}}</text>
       <view class="menu-right">
         <text wx:if="{{item.badgeKey === 'unreadInfoCount' && unreadInfoCount}}" class="menu-badge">{{unreadInfoCount}}</text>
+        <text wx:if="{{reviewMode && reviewOrderCount !== null && item.title === '洗车记录'}}" class="review-record-count">{{reviewOrderCount}}笔体验</text>
         <text class="arrow">›</text>
       </view>
-    </view>
+    </button>
   </view>
 
   <view class="logout-section">
@@ -84,6 +100,28 @@
         <view class="skeleton skeleton-arrow"></view>
       </view>
     </view>
+  </view>
+
+  <view wx:if="{{profileEditorVisible}}" class="profile-editor-mask" bindtap="closeProfileEditor" catchtouchmove="profileNoop">
+    <form class="profile-editor" bindsubmit="saveProfile" catchtap="profileNoop">
+      <view class="profile-editor-header">
+        <text>个人资料</text>
+        <button class="profile-editor-close" bindtap="closeProfileEditor" disabled="{{profileSaving}}" aria-label="关闭">
+          <image src="/assets/icons/lucide-x-gray.svg" mode="aspectFit"></image>
+        </button>
+      </view>
+      <button class="profile-edit-avatar" open-type="chooseAvatar" bindchooseavatar="onChooseProfileAvatar" disabled="{{profileSaving}}" aria-label="选择微信头像或上传图片">
+        <image wx:if="{{draftAvatarPath || user.avatarUrl}}" src="{{draftAvatarPath || user.avatarUrl}}" mode="aspectFill"></image>
+        <view wx:else>{{avatarText}}</view>
+      </button>
+      <view class="profile-editor-avatar-label">修改头像</view>
+      <view class="profile-nickname-field">
+        <text>姓名 / 昵称</text>
+        <input name="nickname" type="nickname" value="{{draftNickname}}" maxlength="128" placeholder="请选择微信昵称或输入姓名" disabled="{{profileSaving}}" bindinput="inputProfileNickname" bindblur="inputProfileNickname" />
+      </view>
+      <view wx:if="{{profileError}}" class="profile-editor-error">{{profileError}}</view>
+      <button class="profile-save" form-type="submit" disabled="{{profileSaving}}">{{profileSaving ? '正在保存' : '保存资料'}}</button>
+    </form>
   </view>
 
   <phone-auth

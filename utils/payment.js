@@ -36,17 +36,6 @@ function confirmPayment(payOrderNo) {
   })
 }
 
-function mockConfirmPayment(payOrderNo) {
-  if (!payOrderNo) {
-    return Promise.reject(new Error('模拟支付缺少支付订单号'))
-  }
-
-  return request({
-    url: `/mini/payments/${payOrderNo}/mock-confirm`,
-    method: 'POST'
-  })
-}
-
 function getPayment(payOrderNo) {
   if (!payOrderNo) return Promise.resolve(null)
 
@@ -109,39 +98,6 @@ function isConfirmPending(confirmResult, payOrderNo) {
   return !isPaymentSuccess(confirmResult)
 }
 
-function requestMockPayment(wxPayParams, payOrderNo) {
-  if (!payOrderNo) {
-    return Promise.reject(new Error('模拟支付缺少支付订单号'))
-  }
-
-  return new Promise((resolve, reject) => {
-    wx.showModal({
-      title: wxPayParams.confirmTitle || '模拟微信支付',
-      content: wxPayParams.confirmContent || '当前账号为测试账号，确认后将模拟支付成功。',
-      confirmText: '确认支付',
-      success: (modalResult) => {
-        if (!modalResult.confirm) {
-          reject({ errMsg: 'requestPayment:fail cancel' })
-          return
-        }
-
-        mockConfirmPayment(payOrderNo)
-          .then((confirmResult) => {
-            resolve({
-              paymentResult: { errMsg: 'requestPayment:ok', mock: true },
-              confirmResult,
-              payOrderNo,
-              confirmPending: !isPaymentSuccess(confirmResult),
-              mock: true
-            })
-          })
-          .catch(reject)
-      },
-      fail: reject
-    })
-  })
-}
-
 function requestPayment(wxPayParams, paymentSource) {
   const payOrderNo = getPayOrderNo(paymentSource) || getPayOrderNo(wxPayParams)
   const mockPayment = !!(
@@ -150,7 +106,7 @@ function requestPayment(wxPayParams, paymentSource) {
   )
 
   if (mockPayment) {
-    return requestMockPayment(wxPayParams || {}, payOrderNo)
+    return Promise.reject(new Error('支付服务暂不可用，请稍后重试或联系客服'))
   }
 
   const payParams = normalizeWxPayParams(wxPayParams)
@@ -187,7 +143,6 @@ module.exports = {
   getPayment,
   getPayOrderNo,
   isConfirmPending,
-  mockConfirmPayment,
   normalizeWxPayParams,
   requestPayment
 }

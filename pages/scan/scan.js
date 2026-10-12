@@ -1,5 +1,6 @@
 const api = require('../../utils/api')
 const { ensurePhoneBound } = require('../../utils/auth')
+const { hasStoredSession } = require('../../utils/request')
 const { STORAGE_KEYS } = require('../../utils/config')
 const { getCurrentLocation } = require('../../utils/location')
 const { parseMachineMid, parsePromotionCode } = require('../../utils/format')
@@ -7,14 +8,16 @@ const { redirectToOrder } = require('../../utils/wash-route')
 
 Page({
   data: {
+    reviewMode: false,
     resolving: false,
     cameraReady: false,
     canScan: false,
     errorText: '',
+    scanStatusText: '正在准备摄像头',
+    scanStatusTone: 'pending',
+    albumSelecting: false,
     flashMode: 'off',
     torchOn: false,
-    manualQrText: 'AWQ7-F4X9K2M8P6R1T3V5',
-    manualPanelExpanded: true,
     phoneAuthVisible: false,
     cameraTop: 98,
     cameraHeight: 569,
@@ -88,8 +91,8 @@ Page({
       ? Math.max(0, windowHeight - Number(info.safeArea.bottom || windowHeight))
       : 0
     const rpx = windowWidth / 750
-    const cameraTop = Math.round((this.data.manualPanelExpanded ? 190 : 108) * rpx)
-    const actionHeight = Math.round((windowHeight <= 680 ? 156 : 180) * rpx) + safeBottom
+    const cameraTop = Math.round((108 + (this.data.reviewMode ? 44 : 0)) * rpx)
+    const actionHeight = Math.round(((windowHeight <= 680 ? 156 : 180) + (this.data.reviewMode ? 112 : 0)) * rpx) + safeBottom
     const actionTop = windowHeight - actionHeight
     const cameraSpace = Math.max(0, actionTop - cameraTop)
     const scanSize = Math.round(Math.min(
@@ -114,15 +117,22 @@ Page({
     })
   },
 
-  toggleManualPanel() {
-    this.setData({
-      manualPanelExpanded: !this.data.manualPanelExpanded
-    }, () => this.updateScanLayout())
-  },
-
   guardScanAccess() {
-    ensurePhoneBound()
-      .then(() => {
+    const checkMode = hasStoredSession() ? api.review.status() : Promise.resolve(null)
+    checkMode.then((status) => {
+      if (status && status.reviewMode) {
+        this.setData({ reviewMode: true })
+        if (!status.enabled || status.expired || status.autoScan !== true) {
+          throw new Error('审核体验已过期或未开放，请在首页退出体验模式')
+        }
+        this.updateScanLayout()
+        this.setScanStatus('请点击下方审核体验按钮', 'pending')
+        return true
+      }
+      return ensurePhoneBound().then(() => true)
+    })
+      .then((canScan) => {
+        if (!canScan) return
         this.setData({
           canScan: true,
           phoneAuthVisible: false
@@ -147,16 +157,43 @@ Page({
       cameraReady: true,
       errorText: ''
     })
+    if (!this.data.resolving && !this.data.albumSelecting) this.restoreScanStatus()
   },
 
   onCameraError(event) {
     this.setData({
-      errorText: (event.detail && event.detail.errMsg) || '无法打开摄像头，请检查权限'
+      cameraReady: false,
+      errorText: '无法打开摄像头，请检查权限'
+    })
+    if (!this.data.resolving) this.setScanStatus('摄像头不可用', 'error')
+  },
+
+  setScanStatus(text, tone) {
+    this.setData({ scanStatusText: text, scanStatusTone: tone || 'pending' })
+  },
+
+  restoreScanStatus() {
+    if (this.data.reviewMode) {
+      this.setScanStatus('请点击下方审核体验按钮', 'pending')
+      return
+    }
+    if (this.data.errorText) this.setScanStatus('摄像头不可用', 'error')
+    else this.setScanStatus(this.data.cameraReady ? '请对准设备二维码' : '正在准备摄像头', this.data.cameraReady ? 'scanning' : 'pending')
+  },
+
+  redirectAfterScan(url) {
+    wx.redirectTo({
+      url,
+      fail: () => {
+        this.setData({ resolving: false })
+        this.setScanStatus('页面打开失败，请重试', 'error')
+      }
     })
   },
 
   onScanCode(event) {
-    if (!this.data.canScan) return
+    if (this.data.reviewMode) return
+    if (!this.data.canScan || this.data.albumSelecting) return
 
     const result = event.detail && event.detail.result
     this.resolveQr(result)
@@ -175,47 +212,36 @@ Page({
 
   scanFromAlbum() {
     if (!this.data.canScan || this.data.resolving) return
+    if (this.data.reviewMode) {
+      wx.showToast({ title: '体验模式请使用下方审核按钮', icon: 'none' })
+      return
+    }
+
+    this.setData({ albumSelecting: true })
+    this.setScanStatus('等待选择二维码图片')
 
     wx.scanCode({
       onlyFromCamera: false,
       success: (res) => {
+        this.setData({ albumSelecting: false })
         this.resolveQr(res.result)
       },
       fail: (err) => {
+        this.setData({ albumSelecting: false })
         if (!String(err.errMsg || '').includes('cancel')) {
+          this.setScanStatus('图片识别失败，请重试', 'error')
           wx.showToast({
             title: '扫码失败',
             icon: 'none'
           })
-        }
+        } else this.restoreScanStatus()
       }
     })
   },
 
-  onManualQrInput(event) {
-    this.setData({
-      manualQrText: event.detail.value
-    })
-  },
-
-  submitManualQr() {
-    if (!this.data.canScan || this.data.resolving) return
-
-    const value = String(this.data.manualQrText || '').trim()
-
-    if (!value) {
-      wx.showToast({
-        title: '请输入二维码信息',
-        icon: 'none'
-      })
-      return
-    }
-
-    this.resolveQr(value)
-  },
-
   resolveQr(rawResult) {
     if (!this.data.canScan || this.data.resolving) return
+    if (this.data.reviewMode) return
 
     const promotionCode = parsePromotionCode(rawResult)
     if (promotionCode) {
@@ -226,6 +252,7 @@ Page({
     const mid = parseMachineMid(rawResult)
 
     if (!mid) {
+      this.setScanStatus('二维码无效，请重新扫码', 'error')
       wx.showToast({
         title: '二维码无效',
         icon: 'none'
@@ -234,27 +261,27 @@ Page({
     }
 
     this.setData({ resolving: true })
+    this.setScanStatus('正在获取当前位置')
     wx.showLoading({ title: '识别机器中' })
 
     getCurrentLocation()
-      .then((location) => api.scan.resolve({
-        mid,
-        lat: location.latitude,
-        lng: location.longitude
-      }))
+      .then((location) => {
+        this.setScanStatus('正在识别设备信息')
+        return api.scan.resolve({ mid, lat: location.latitude, lng: location.longitude })
+      })
       .then((result) => {
+        this.setScanStatus('识别成功，正在进入', 'success')
         wx.setStorageSync(STORAGE_KEYS.lastScan, Object.assign({}, result, { mid }))
 
         if (result.resumeOrder && result.resumeOrder.shouldResume && redirectToOrder(result.resumeOrder)) {
           return
         }
 
-        wx.redirectTo({
-          url: `/pages/wash-confirm/wash-confirm?mid=${encodeURIComponent(mid)}`
-        })
+        this.redirectAfterScan(`/pages/wash-confirm/wash-confirm?mid=${encodeURIComponent(mid)}`)
       })
       .catch((err) => {
         if (err.code === 'PHONE_REQUIRED') {
+          this.setScanStatus('请先完成手机号授权')
           this.setData({
             phoneAuthVisible: true,
             resolving: false
@@ -267,18 +294,44 @@ Page({
           icon: 'none'
         })
         this.setData({ resolving: false })
+        this.setScanStatus('识别失败，请重试', 'error')
       })
       .finally(() => {
         wx.hideLoading()
       })
   },
 
+  async scanReviewDevice() {
+    if (!this.data.reviewMode || !this.data.canScan || this.data.resolving) return
+    this.setData({ resolving: true })
+    this.setScanStatus('正在识别模拟设备', 'pending')
+    try {
+      const status = await api.review.status()
+      if (!status.reviewMode || !status.enabled || status.expired || status.autoScan !== true) {
+        throw new Error('审核体验已过期或未开放，请在首页退出体验模式')
+      }
+      const result = await api.review.scan()
+      if (result.scanSuccess !== true || result.reviewMode !== true || result.simulated !== true) {
+        throw new Error('模拟设备识别失败，请重试')
+      }
+      wx.setStorageSync('reviewScanInfo', result)
+      this.setScanStatus('识别成功，正在进入', 'success')
+      this.redirectAfterScan('/pages/wash-confirm/wash-confirm?review=1')
+    } catch (err) {
+      this.setData({ resolving: false })
+      this.setScanStatus('模拟识别失败，请重试', 'error')
+      wx.showModal({ title: '识别未完成', content: err.message || '请稍后重试', showCancel: false })
+    }
+  },
+
   resolvePromotionCode(code) {
     this.setData({ resolving: true })
+    this.setScanStatus('正在读取领券活动')
     wx.showLoading({ title: '读取领券活动' })
 
     api.promotions.detail(code)
       .then((activity) => {
+        this.setScanStatus('活动已识别，等待确认')
         wx.hideLoading()
         return new Promise((resolve) => {
           const couponName = activity.couponName || `${activity.couponMinutes || 0}分钟洗车券`
@@ -294,22 +347,28 @@ Page({
         })
       })
       .then((confirmed) => {
-        if (!confirmed) return null
+        if (!confirmed) {
+          this.restoreScanStatus()
+          return null
+        }
+        this.setScanStatus('正在领取洗车券')
         wx.showLoading({ title: '正在领取' })
         return api.promotions.claim(code)
       })
       .then((result) => {
         if (!result) return
+        this.setScanStatus('领取成功', 'success')
         wx.hideLoading()
         wx.showModal({
           title: '领取成功',
           content: `${result.couponName || '洗车券'}已放入你的账户`,
           showCancel: false,
           confirmText: '查看洗车券',
-          success: () => wx.redirectTo({ url: '/pages/coupons/coupons' })
+          success: () => this.redirectAfterScan('/pages/coupons/coupons')
         })
       })
       .catch((err) => {
+        this.setScanStatus('领取失败，请重试', 'error')
         wx.showToast({ title: err.message || '活动领取失败', icon: 'none' })
       })
       .finally(() => {
@@ -322,7 +381,8 @@ Page({
     this.setData({
       canScan: true,
       phoneAuthVisible: false
-    })
+    }, () => this.startScanAnimation())
+    this.restoreScanStatus()
   },
 
   onPhoneAuthCancel() {

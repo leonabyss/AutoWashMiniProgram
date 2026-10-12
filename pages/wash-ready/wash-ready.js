@@ -2,10 +2,13 @@ const api = require('../../utils/api')
 const { IMAGE_BASE_URL, STORAGE_KEYS } = require('../../utils/config')
 const { makeClientRequestId } = require('../../utils/format')
 const { isWashRunning, redirectToOrder } = require('../../utils/wash-route')
+const { isReviewOrder } = require('../../utils/review-mode')
 
 Page({
+  behaviors: [require('../../utils/wash-network')],
   data: {
     orderNo: '',
+    reviewMode: false,
     statusText: '等待机器启动确认',
     remoteStarting: false,
     controlPanelImageUrl: `${IMAGE_BASE_URL}/wash-ready-control-panel.png`
@@ -22,14 +25,16 @@ Page({
       return
     }
 
-    this.setData({ orderNo })
+    this.setData({ orderNo, reviewMode: isReviewOrder(orderNo) })
+    this.startNetworkWatch()
     this.pollStatus()
     this.statusTimer = setInterval(() => {
       this.pollStatus()
-    }, 3000)
+    }, this.data.reviewMode ? 2000 : 3000)
   },
 
   onUnload() {
+    this.stopNetworkWatch()
     this.clearStatusTimer()
   },
 
@@ -41,10 +46,12 @@ Page({
   },
 
   pollStatus() {
-    if (!this.data.orderNo) return
+    if (!this.data.orderNo || this.data.networkOffline || this.statusRefreshing) return
+    this.statusRefreshing = true
 
     api.wash.status(this.data.orderNo)
       .then((status) => {
+        this.markNetworkSynced()
         const washStatus = String((status && status.washStatus) || '').toLowerCase()
         const routeOrder = Object.assign({ orderNo: this.data.orderNo }, status || {})
 
@@ -65,14 +72,12 @@ Page({
           })
         }
       })
-      .catch((err) => {
-        this.setData({
-          statusText: err.message || '启动状态查询失败'
-        })
-      })
+      .catch((err) => this.markNetworkFailure(err))
+      .finally(() => { this.statusRefreshing = false })
   },
 
   statusText(washStatus) {
+    if (this.data.reviewMode && washStatus === 'starting') return '模拟设备准备就绪'
     const map = {
       created: '等待机器启动确认',
       paid: '等待机器启动确认',
@@ -89,6 +94,7 @@ Page({
 
   openRemoteControl() {
     if (!this.data.orderNo || this.data.remoteStarting) return
+    if (!this.canSendWashCommand()) return
 
     this.setData({ remoteStarting: true })
     this.clearStatusTimer()
@@ -118,6 +124,7 @@ Page({
   },
 
   ensureRemoteReady() {
+    if (this.data.reviewMode) return api.wash.start(this.data.orderNo)
     return api.wash.status(this.data.orderNo)
       .catch(() => null)
       .then((status) => {

@@ -1,0 +1,1 @@
+<view wx:if="{{reviewMode}}" class="review-flow-notice">审核体验模式（模拟设备及余额）</view>

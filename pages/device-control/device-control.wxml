@@ -1,8 +1,10 @@
-<view class="device-control-page">
+<view class="device-control-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <view wx:if="{{networkNotice}}" class="wash-network-notice" role="alert">{{networkNotice}}</view>
   <view class="control-status">
     <view class="status-item connection-status">
       <view class="status-dot"></view>
-      <text>设备已连接</text>
+      <text>{{networkNotice ? '状态待同步' : '设备遥控'}}</text>
     </view>
     <view class="status-divider"></view>
     <view class="status-item operation-status">
@@ -26,7 +28,7 @@
       <view class="device-action-copy">
         <text class="device-action-title">{{operatingKey === 'water' ? '发送中' : (waitingActionKey === 'water' ? '确认中' : (activeControlKey === 'water' ? '冲水中' : '冲水'))}}</text>
         <text wx:if="{{operatingKey === 'water'}}" class="device-action-sub">正在连接设备</text>
-        <text wx:elif="{{activeControlKey === 'water'}}" class="device-action-sub">设备已确认执行</text>
+        <text wx:elif="{{activeControlKey === 'water'}}" class="device-action-sub">{{reviewMode ? '模拟功能已开启' : '设备已确认执行'}}</text>
         <text wx:elif="{{waitingActionKey === 'water'}}" class="device-action-sub">{{controlFeedback}}</text>
       </view>
     </button>
@@ -45,7 +47,7 @@
       <view class="device-action-copy">
         <text class="device-action-title">{{operatingKey === 'foam' ? '发送中' : (waitingActionKey === 'foam' ? '确认中' : (activeControlKey === 'foam' ? '泡沫中' : '泡沫'))}}</text>
         <text wx:if="{{operatingKey === 'foam'}}" class="device-action-sub">正在连接设备</text>
-        <text wx:elif="{{activeControlKey === 'foam'}}" class="device-action-sub">设备已确认执行</text>
+        <text wx:elif="{{activeControlKey === 'foam'}}" class="device-action-sub">{{reviewMode ? '模拟功能已开启' : '设备已确认执行'}}</text>
         <text wx:elif="{{waitingActionKey === 'foam'}}" class="device-action-sub">{{controlFeedback}}</text>
       </view>
     </button>

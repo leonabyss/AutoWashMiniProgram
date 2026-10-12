@@ -3,6 +3,7 @@ const { ensurePhoneBound } = require('../../utils/auth')
 const { IMAGE_BASE_URL, STORAGE_KEYS } = require('../../utils/config')
 const { centToYuan } = require('../../utils/format')
 const { requestPayment } = require('../../utils/payment')
+const reviewPurchase = require('../../utils/review-purchase')
 
 function getCouponTotal(coupons) {
   if (!coupons) return 0
@@ -130,13 +131,6 @@ function washCardAmount(product) {
   return value || 0
 }
 
-function isFiveCentTestCard(product) {
-  const text = productText(product)
-  const faceValueCent = Number(product && product.faceValueCent || 0)
-
-  return faceValueCent === 5000 || text.indexOf('wash_card_50') >= 0 || text.indexOf('充50元') >= 0
-}
-
 function formatMemberProduct(product) {
   const quota = memberQuotaMinutes(product)
 
@@ -168,8 +162,6 @@ function formatCardProduct(product) {
     rightsText: validMonth ? `卡有效期 ${validMonth}个月` : product.validityText,
     category: 'wash-card',
     artSrc: `${IMAGE_BASE_URL}/card-bg-single-10min.jpg`,
-    fiveCentTestPay: isFiveCentTestCard(product),
-    testPayText: isFiveCentTestCard(product) ? '微信支付 ¥0.05' : '',
     badgeImageUrl: product.badgeImageUrl || product.promotionBadgeImageUrl || ''
   })
 }
@@ -266,6 +258,7 @@ function normalizeCardProduct(item) {
 
 Page({
   data: {
+    reviewMode: false,
     couponCount: 0,
     crownState: 'expired',
     siteTitle: '正在获取可支付场地...',
@@ -300,7 +293,10 @@ Page({
     payingId: ''
   },
 
-  onLoad() {
+  onLoad(options) {
+    if (options && options.category === 'wash-card') {
+      this.setData({ activeCategory: 'wash-card', activeCategoryIndex: 1, categoryMeta: getCategoryMeta('wash-card') })
+    }
     this.guardAccess()
   },
 
@@ -316,6 +312,10 @@ Page({
     ensurePhoneBound()
       .then(() => {
         this.setData({ phoneAuthVisible: false })
+        return api.review.status()
+      })
+      .then((status) => {
+        this.setData({ reviewMode: status.reviewMode === true })
         this.loadProducts()
       })
       .catch((err) => {
@@ -804,9 +804,23 @@ Page({
       payload.skuId = product.skuId
     }
 
-    api.member.createOrder(payload)
+    api.review.status()
+      .then((status) => {
+        this.setData({ reviewMode: status.reviewMode === true })
+        if (status.reviewMode) {
+          wx.hideLoading()
+          return reviewPurchase.purchase(product, paymentSite, status).then((receipt) => ({ reviewPreview: true, receipt }))
+        }
+        return api.member.createOrder(payload)
+      })
       .then((order) => this.payIfNeeded(order))
       .then((order) => {
+        if (order && order.reviewPreview) {
+          if (order.receipt) {
+            wx.showModal({ title: '模拟流程已完成', content: '本机体验记录已保存，可在我的洗车卡或充值记录中查看。未产生真实支付，后台体验余额保持不变。', showCancel: false })
+          }
+          return
+        }
         if (!order || !order.paymentConfirmPending) {
           wx.showToast({
             title: '购买成功',
@@ -833,6 +847,8 @@ Page({
 
   payIfNeeded(order) {
     wx.hideLoading()
+
+    if (order && order.reviewPreview) return Promise.resolve(order)
 
     if (order && order.wxPayParams) {
       return requestPayment(order.wxPayParams, order).then((payment) => Object.assign({}, order, {

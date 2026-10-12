@@ -1,0 +1,60 @@
+<view wx:if="{{faultPanelVisible}}" class="fault-mask" bindtap="closeFaultReport" catchtouchmove="noop">
+    <view class="fault-panel {{faultSheetDragging ? 'is-dragging' : ''}}" style="transform: translateY({{faultSheetOffset}}px);" catchtap="noop">
+      <view class="fault-drag-area" catchtouchstart="onFaultSheetStart" catchtouchmove="onFaultSheetMove" catchtouchend="onFaultSheetEnd" catchtouchcancel="onFaultSheetCancel">
+        <view class="fault-drag-handle"></view>
+      </view>
+      <view class="fault-header" bindtouchstart="onFaultSheetStart" catchtouchmove="onFaultSheetMove" bindtouchend="onFaultSheetEnd" bindtouchcancel="onFaultSheetCancel">
+        <view class="fault-heading">
+          <view class="fault-title">故障上报</view>
+          <view class="fault-subtitle">请选择本次洗车过程中遇到的问题</view>
+        </view>
+        <button class="fault-close" hover-class="fault-close-hover" bindtap="closeFaultReport" aria-label="关闭故障上报">
+          <image src="/assets/icons/lucide-x-gray.svg" mode="aspectFit"></image>
+        </button>
+      </view>
+
+      <scroll-view class="fault-body" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="fault-options">
+          <button
+            wx:for="{{faultOptions}}"
+            wx:key="key"
+            class="fault-option {{item.active ? 'active' : ''}}"
+            hover-class="fault-option-hover"
+            bindtap="toggleFaultOption"
+            data-key="{{item.key}}"
+          >
+            <text>{{item.label}}</text>
+            <view class="fault-option-mark">
+              <image wx:if="{{item.active}}" src="/assets/icons/lucide-check-white.svg" mode="aspectFit"></image>
+            </view>
+          </button>
+        </view>
+
+        <view class="fault-field-title">
+          <text>详细描述</text>
+          <text class="fault-optional">选填</text>
+        </view>
+        <textarea
+          class="fault-textarea"
+          maxlength="1000"
+          placeholder="例如：泡沫按钮无反应，现场没有泡沫喷出"
+          placeholder-class="fault-placeholder"
+          cursor-spacing="24"
+          value="{{faultDesc}}"
+          bindinput="onFaultDescInput"
+        ></textarea>
+        <view class="fault-count">{{faultDesc.length}}/1000</view>
+
+        <view class="fault-note">
+          <image src="/assets/icons/lucide-circle-info-blue.svg" mode="aspectFit"></image>
+          <text>同一订单仅保留首次上报。工作人员会核查故障，退款或补偿以审核处理为准。</text>
+        </view>
+      </scroll-view>
+
+      <view class="fault-footer">
+        <button class="report-btn" loading="{{reporting}}" disabled="{{reporting}}" hover-class="report-btn-hover" bindtap="submitFaultReport">
+          {{reporting ? '正在上报' : '一键上报'}}
+        </button>
+      </view>
+    </view>
+  </view>

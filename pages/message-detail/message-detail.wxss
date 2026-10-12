@@ -1,3 +1,5 @@
+.benefit-icon { display: flex; align-items: center; justify-content: center; background: #edf5ff !important; flex-shrink: 0; }
+.benefit-icon image { width: 40rpx; height: 40rpx; }
 .detail-page { min-height: 100vh; padding: 28rpx 24rpx 60rpx; box-sizing: border-box; background: #f6f8fc; }
 .detail-card { padding: 38rpx 32rpx; border-radius: 18rpx; background: #fff; box-shadow: 0 10rpx 28rpx rgba(14,40,80,.06); }
 .category { display: inline-block; padding: 8rpx 18rpx; border-radius: 8rpx; color: #216fe9; font-size: 22rpx; background: #edf5ff; }.title { margin-top: 24rpx; color: #13223a; font-size: 38rpx; font-weight: 900; }.time { margin-top: 14rpx; color: #98a2b3; font-size: 23rpx; }.divider { height: 1rpx; margin: 30rpx 0; background: #edf1f7; }.content { color: #435168; font-size: 28rpx; line-height: 1.8; }

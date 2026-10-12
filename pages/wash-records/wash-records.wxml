@@ -1,4 +1,7 @@
-<view class="list-page">
+<view class="list-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <view wx:if="{{reviewMode}}" class="review-account-note">仅显示当前账号在本机已同步的模拟洗车订单。</view>
+  <view wx:if="{{reviewStale}}" class="review-account-note">部分记录暂为上次同步数据。</view>
   <view wx:if="{{records.length}}" class="record-list">
     <view wx:for="{{records}}" wx:key="orderNo" class="record-card">
       <view class="record-top">
@@ -12,13 +15,17 @@
           <text>{{item.durationText}}</text>
         </view>
         <view>
-          <text class="meta-label">消费</text>
+          <text class="meta-label">{{reviewMode && item.statusClass !== 'finished' ? '预计费用' : '消费'}}</text>
           <text class="amount">{{item.amountText}}</text>
         </view>
       </view>
       <view class="record-time">开始：{{item.createdAtText}}</view>
       <view class="record-time">完成：{{item.finishedAtText}}</view>
     </view>
+  </view>
+  <view wx:elif="{{loadError && !loading}}" class="empty-state">
+    <view class="empty-title">记录加载失败</view>
+    <view class="empty-desc" bindtap="onPullDownRefresh">点击重新获取</view>
   </view>
   <view wx:elif="{{!loading}}" class="empty-state">
     <view class="empty-icon">洗</view>

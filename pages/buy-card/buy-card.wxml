@@ -1,4 +1,6 @@
-<view class="buy-page">
+<view class="buy-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <view wx:if="{{reviewMode}}" class="review-account-note">购卡与充值仅模拟确认流程，保存本机记录，不扣款、不增加后台体验余额。</view>
   <view class="overview-bar">
     <view class="overview-item coupon-overview">
       <image class="overview-icon" src="/assets/icons/lucide-ticket.svg" mode="aspectFit"></image>
@@ -74,7 +76,7 @@
               <text class="product-price">{{item.displayPrice}}</text>
             </view>
             <text class="product-rights">{{item.rightsText}}</text>
-            <view class="purchase-button">立即购买</view>
+            <view class="purchase-button">{{reviewMode ? (activeCategory === 'member' ? '模拟购卡' : '模拟充值') : '立即购买'}}</view>
           </view>
 
           <view wx:if="{{item.badgeImageUrl}}" class="cms-badge image-badge">

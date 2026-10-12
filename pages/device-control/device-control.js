@@ -1,6 +1,9 @@
 const api = require('../../utils/api')
 const { STORAGE_KEYS } = require('../../utils/config')
 const { makeClientRequestId } = require('../../utils/format')
+const { chineseText } = require('../../utils/display-text')
+const { isReviewOrder } = require('../../utils/review-mode')
+const { redirectToOrder } = require('../../utils/wash-route')
 
 const ACTIONS = {
   water: {
@@ -97,8 +100,10 @@ function shouldResetRemoteControl(status) {
 }
 
 Page({
+  behaviors: [require('../../utils/wash-network')],
   data: {
     orderNo: '',
+    reviewMode: false,
     operatingKey: '',
     isOperating: false,
     activeControlKey: '',
@@ -118,10 +123,14 @@ Page({
     }
 
     wx.setStorageSync(STORAGE_KEYS.currentWashOrderNo, orderNo)
-    this.setData({ orderNo })
+    this.setData({ orderNo, reviewMode: isReviewOrder(orderNo) })
+    this.startNetworkWatch()
+    this.startStatusPolling(this.data.reviewMode ? 2000 : 3000)
+    this.pollRemoteStatus()
   },
 
   onUnload() {
+    this.stopNetworkWatch()
     this.clearStatusPollTimer()
     this.clearWaitingTimer()
   },
@@ -140,13 +149,10 @@ Page({
 
   sendWashAction(actionKey) {
     if (!this.data.orderNo || this.data.operatingKey) return
+    if (!this.canSendWashCommand()) return
 
     const action = ACTIONS[actionKey]
     if (!action) return
-
-    if (actionKey === 'stop') {
-      this.resetActiveControl()
-    }
 
     this.setData({ operatingKey: actionKey, isOperating: true })
     wx.showLoading({ title: action.loading })
@@ -158,11 +164,16 @@ Page({
     })
       .then((result) => {
         wx.hideLoading()
+        if (this.data.reviewMode && result.washStatus === 'finished') {
+          this.clearStatusPollTimer()
+          redirectToOrder(result)
+          return
+        }
 
         if (isFailedAck(result)) {
           wx.showModal({
             title: `${action.title}未确认`,
-            content: result.feedbackText || `设备返回码：${result.responseCode}`,
+            content: chineseText(result.feedbackText, '设备未确认执行，请检查设备状态'),
             showCancel: false
           })
           return
@@ -177,12 +188,13 @@ Page({
         }
 
         wx.showToast({
-          title: result.feedbackText || action.success,
+          title: chineseText(result.feedbackText, action.success),
           icon: 'none'
         })
       })
       .catch((err) => {
         wx.hideLoading()
+        if (err.code === 'NETWORK_ERROR') this.markNetworkFailure()
         wx.showModal({
           title: `${action.title}失败`,
           content: err.message || '后台指令下发失败，请稍后再试。',
@@ -200,7 +212,7 @@ Page({
     this.clearWaitingTimer()
     this.setData({
       waitingActionKey: actionKey,
-      controlFeedback: (result && result.feedbackText) || '确认中'
+      controlFeedback: chineseText(result && result.feedbackText, '确认中')
     })
     this.startStatusPolling(pollMs)
     this.waitingTimer = setTimeout(() => {
@@ -215,14 +227,13 @@ Page({
     this.setData({
       activeControlKey: actionKey,
       waitingActionKey: '',
-      controlFeedback: (result && result.feedbackText) || `${ACTIONS[actionKey].title}已开始`
+      controlFeedback: chineseText(result && result.feedbackText, `${ACTIONS[actionKey].title}已开始`)
     })
     this.startStatusPolling(Math.max(1000, Number((result && result.suggestedPollMs) || 1000)))
   },
 
   resetActiveControl() {
     this.clearWaitingTimer()
-    this.clearStatusPollTimer()
     this.setData({
       activeControlKey: '',
       waitingActionKey: '',
@@ -252,15 +263,26 @@ Page({
   },
 
   pollRemoteStatus() {
-    if (!this.data.orderNo || (!this.data.activeControlKey && !this.data.waitingActionKey)) return
+    if (!this.data.orderNo || this.data.networkOffline || this.statusRefreshing) return
+    this.statusRefreshing = true
 
     api.wash.status(this.data.orderNo)
       .then((status) => {
+        this.markNetworkSynced()
+        if (this.data.reviewMode) {
+          if (status.washStatus === 'finished') {
+            this.clearStatusPollTimer()
+            redirectToOrder(status)
+            return
+          }
+          this.setData({ activeControlKey: status.activeFunction || '', waitingActionKey: '' })
+        }
         if (shouldResetRemoteControl(status)) {
           this.resetActiveControl()
         }
       })
-      .catch(() => {})
+      .catch((err) => this.markNetworkFailure(err))
+      .finally(() => { this.statusRefreshing = false })
   },
 
   backToWashing() {

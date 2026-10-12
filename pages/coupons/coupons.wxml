@@ -1,4 +1,6 @@
-<view class="coupon-page">
+<view class="coupon-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <view wx:if="{{reviewMode}}" class="review-account-note">这里显示账号真实持有的洗车券，模拟洗车仅使用体验余额，不消耗真实卡券。</view>
   <view class="summary"><view class="summary-number">{{coupons.length}}</view><view class="summary-label">张洗车券</view></view>
   <view wx:if="{{coupons.length}}" class="coupon-list">
     <view wx:for="{{coupons}}" wx:key="id" class="coupon-card {{item.status}}">

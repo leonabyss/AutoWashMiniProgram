@@ -1,6 +1,7 @@
 const api = require('../../utils/api')
 const { ensureLogin } = require('../../utils/request')
 const { centToYuan, secToText } = require('../../utils/format')
+const reviewPurchase = require('../../utils/review-purchase')
 
 function formatDate(value) {
   if (!value) return '--'
@@ -139,6 +140,7 @@ Page({
       { key: 'coupon', label: '洗车券' }
     ],
     activeTab: 'member',
+    reviewMode: false,
     activeTabIndex: 0,
     memberCards: [],
     washCards: [],
@@ -163,13 +165,24 @@ Page({
     this.setData({ loading: true })
 
     return ensureLogin()
+      .then(() => api.review.status())
+      .then((status) => this.setData({ reviewMode: status.reviewMode === true }))
       .then(() => Promise.all([
         api.member.cards().catch(() => []),
         api.member.temporaryCards({ activeOnly: false }).catch(() => []),
         api.coupons.mine({ page: 0, size: 50 }).catch(() => null)
       ]))
       .then(([cards, temporaryCards, couponPage]) => {
-        const normalizedCards = (cards || []).concat(temporaryCards || []).map(normalizeCard)
+        const previewCards = this.data.reviewMode ? reviewPurchase.records().map((item) => ({
+          type: 'card', uniqueId: item.id,
+          category: item.kind === 'member' ? 'member' : 'washCard',
+          name: item.name, kindText: '本机模拟购买 · 不可用于结算',
+          statusText: '体验展示', statusClass: 'disabled',
+          remainText: item.rightsText || '仅模拟购买流程',
+          validFromText: '--', validToText: '未发放真实权益',
+          productOrderNo: '模拟记录（未生成后台订单）'
+        })) : []
+        const normalizedCards = previewCards.concat((cards || []).concat(temporaryCards || []).map(normalizeCard))
         const memberCards = normalizedCards.filter((card) => card.category === 'member')
         const washCards = normalizedCards.filter((card) => card.category === 'washCard')
         const coupons = normalizedCards

@@ -15,6 +15,7 @@
     "pages/webview/webview",
     "pages/scan/scan",
     "pages/wash-confirm/wash-confirm",
+    "pages/group-buy-redeem/group-buy-redeem",
     "pages/wash-ready/wash-ready",
     "pages/device-control/device-control",
     "pages/washing/washing",

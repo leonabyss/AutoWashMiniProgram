@@ -1,6 +1,7 @@
 const api = require('../../utils/api')
 const { ensureLogin } = require('../../utils/request')
 const { centToYuan, secToText } = require('../../utils/format')
+const { history: reviewHistory } = require('../../utils/review-account')
 
 function formatDate(value) {
   if (!value) return '--'
@@ -33,7 +34,7 @@ function statusText(status) {
     canceled: '已取消'
   }
 
-  return map[String(status || '').toLowerCase()] || status || '--'
+  return map[String(status || '').toLowerCase()] || '状态待确认'
 }
 
 function payMethodText(method) {
@@ -41,10 +42,11 @@ function payMethodText(method) {
     wechat: '微信支付',
     wallet: '余额支付',
     member_card: '会员卡',
-    coupon: '洗车券'
+    coupon: '洗车券',
+    review_wallet: '虚拟体验余额'
   }
 
-  return map[String(method || '').toLowerCase()] || method || '--'
+  return map[String(method || '').toLowerCase()] || '结算方式待确认'
 }
 
 function normalizePage(pageData) {
@@ -79,6 +81,9 @@ function normalizeOrder(item) {
 
 Page({
   data: {
+    reviewMode: false,
+    reviewStale: false,
+    loadError: false,
     records: [],
     page: 0,
     size: 20,
@@ -105,24 +110,33 @@ Page({
   loadRecords(reset) {
     const page = reset ? 0 : this.data.page + 1
 
-    this.setData(reset ? { loading: true } : { loadingMore: true })
+    this.setData(reset ? { loading: true, loadError: false } : { loadingMore: true, loadError: false })
 
     return ensureLogin()
-      .then(() => api.wash.list({ page, size: this.data.size }))
+      .then(() => api.review.status())
+      .then(async (status) => {
+        if (this.data.reviewMode !== (status.reviewMode === true)) this.setData({ records: [] })
+        this.setData({ reviewMode: status.reviewMode === true, reviewStale: false })
+        if (!status.reviewMode) return api.wash.list({ page, size: this.data.size })
+        const result = await reviewHistory(status)
+        this.setData({ reviewStale: result.stale })
+        return { items: result.items, page: 0, totalPages: 1 }
+      })
       .then((pageData) => {
         const normalized = normalizePage(pageData)
         const records = (normalized.items || []).map(normalizeOrder)
-        const nextRecords = reset ? records : this.data.records.concat(records)
+        const nextRecords = reset || this.data.reviewMode ? records : this.data.records.concat(records)
         const totalPages = Number(normalized.totalPages || 1)
 
         this.setData({
           records: nextRecords,
-          page: Number(normalized.page || page),
+          page: Number(normalized.page == null ? page : normalized.page),
           totalPages,
-          finished: Number(normalized.page || page) + 1 >= totalPages
+          finished: Number(normalized.page == null ? page : normalized.page) + 1 >= totalPages
         })
       })
       .catch((err) => {
+        this.setData({ loadError: true })
         wx.showToast({
           title: err.message || '洗车记录加载失败',
           icon: 'none'

@@ -1,3 +1,14 @@
+.wash-network-notice {
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 12rpx 20rpx;
+  color: #8a4308;
+  background: #fff3dc;
+  font-size: 24rpx;
+  line-height: 1.5;
+  white-space: normal;
+}
+
 page {
   width: 100vw;
   min-height: 100%;
@@ -120,3 +131,19 @@ button.weui-btn::after {
   color: #ffd600;
   font-weight: 700;
 }
+.review-flow-notice {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 80;
+  height: 44rpx;
+  line-height: 44rpx;
+  font-size: 22rpx;
+  text-align: center;
+  color: #774b12;
+  background: #fff0ce;
+  pointer-events: none;
+}
+.review-flow-mode { padding-top: 48rpx !important; box-sizing: border-box; }
+.review-account-note { margin: 18rpx 24rpx; color: #52677e; font-size: 24rpx; line-height: 1.6; }

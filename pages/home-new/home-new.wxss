@@ -5,10 +5,11 @@ page {
 }
 
 .new-home-page {
-  --page-gap: 28rpx;
-  --section-gap: 26rpx;
+  --page-gap: 10rpx;
+  --section-gap: 10rpx;
   width: 100vw;
   min-height: 0;
+  max-height: 100%;
   color: #111b2c;
   overflow: hidden;
   background: #f5f8fc;
@@ -31,14 +32,19 @@ page {
 .new-home-content {
   width: 100%;
   height: 100%;
+  min-height: 0;
+  min-width: 0;
+  box-sizing: border-box;
   padding: var(--page-gap);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: var(--section-gap);
 }
 
 .account-card {
   flex: 0 0 138rpx;
+  height: 138rpx;
   min-height: 0;
   padding: 24rpx 28rpx;
   display: grid;
@@ -143,6 +149,7 @@ page {
 .guest-login-card {
   width: 100% !important;
   flex: 0 0 138rpx;
+  height: 138rpx;
   min-height: 0;
   padding: 22rpx 28rpx !important;
   display: flex;
@@ -276,8 +283,10 @@ page {
 
 .banner-section {
   position: relative;
-  flex: 1 1 auto;
-  min-height: 238rpx;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  align-self: stretch;
   overflow: visible;
 }
 
@@ -302,6 +311,7 @@ page {
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
 .banner-loading {
@@ -392,13 +402,15 @@ page {
 
 .operation-area {
   width: 100%;
+  min-width: 0;
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: var(--section-gap);
 }
 
 .scan-action {
+  --scan-content-height: 64rpx;
   width: 100% !important;
   min-width: 100% !important;
   align-self: stretch;
@@ -413,11 +425,6 @@ page {
   font-weight: 750;
   background: #0865e7 !important;
   box-shadow: 0 14rpx 28rpx rgba(8, 101, 231, 0.22);
-}
-
-.scan-action.first-scan-mode {
-  height: 174rpx;
-  font-size: 60rpx;
 }
 
 .scan-action.resume-mode {
@@ -494,10 +501,25 @@ page {
 
 .scan-icon-wrap {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 64rpx;
   width: 64rpx;
   height: 64rpx;
   overflow: hidden;
+}
+
+.scan-action-label {
+  display: flex;
+  height: var(--scan-content-height);
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .scan-icon {
@@ -529,9 +551,22 @@ page {
 }
 
 .secondary-actions {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20rpx;
+  gap: var(--page-gap);
+}
+
+.secondary-action-wrap {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .card-action-wrap {
@@ -539,14 +574,18 @@ page {
   min-width: 0;
 }
 
-.secondary-action {
-  width: 100%;
+.new-home-page .secondary-action {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box;
   height: 104rpx;
-  padding: 0 22rpx !important;
+  padding: 0 20rpx !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18rpx;
+  gap: 20rpx;
   border: 2rpx solid #d8e2f0 !important;
   border-radius: 8rpx !important;
   text-align: left;
@@ -554,9 +593,9 @@ page {
 }
 
 .secondary-icon {
-  flex: 0 0 42rpx;
-  width: 42rpx;
-  height: 42rpx;
+  flex: 0 0 56rpx;
+  width: 56rpx;
+  height: 56rpx;
 }
 
 .secondary-copy {
@@ -570,7 +609,7 @@ page {
 
 .secondary-title {
   color: #111827;
-  font-size: 29rpx;
+  font-size: 32rpx;
   font-weight: 650;
   line-height: 1.1;
   white-space: nowrap;
@@ -578,7 +617,7 @@ page {
 
 .secondary-subtitle {
   color: #7a8494;
-  font-size: 20rpx;
+  font-size: 22rpx;
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -607,8 +646,14 @@ page {
 }
 
 .last-use-row {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   min-height: 72rpx;
-  padding: 0 18rpx;
+  margin: 0;
+  flex-shrink: 0;
+  padding: 12rpx 18rpx;
   display: flex;
   align-items: center;
   gap: 14rpx;
@@ -631,6 +676,7 @@ page {
   align-items: center;
   gap: 12rpx;
   font-size: 22rpx;
+  line-height: 1.4;
   white-space: nowrap;
 }
 
@@ -648,7 +694,11 @@ page {
 }
 
 .last-use-machine {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 26%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #242d3b;
 }
 
@@ -680,19 +730,16 @@ page {
   font-size: 24rpx;
 }
 
-.home-compact {
-  --page-gap: 24rpx;
-  --section-gap: 22rpx;
-}
-
 .home-compact .account-card {
   flex-basis: 126rpx;
+  height: 126rpx;
   padding-top: 18rpx;
   padding-bottom: 18rpx;
 }
 
 .home-compact .guest-login-card {
   flex-basis: 126rpx;
+  height: 126rpx;
   padding-top: 18rpx !important;
   padding-bottom: 18rpx !important;
 }
@@ -700,11 +747,6 @@ page {
 .home-compact .scan-action {
   height: 134rpx;
   font-size: 49rpx;
-}
-
-.home-compact .scan-action.first-scan-mode {
-  height: 158rpx;
-  font-size: 55rpx;
 }
 
 .home-compact .secondary-action {
@@ -715,13 +757,9 @@ page {
   min-height: 66rpx;
 }
 
-.home-tight {
-  --page-gap: 20rpx;
-  --section-gap: 16rpx;
-}
-
 .home-tight .account-card {
   flex-basis: 106rpx;
+  height: 106rpx;
   padding: 14rpx 20rpx;
   grid-template-columns: minmax(0, 1fr) 2rpx minmax(170rpx, 0.78fr);
   column-gap: 18rpx;
@@ -761,6 +799,7 @@ page {
 
 .home-tight .guest-login-card {
   flex-basis: 106rpx;
+  height: 106rpx;
   padding: 14rpx 20rpx !important;
   gap: 14rpx;
 }
@@ -820,18 +859,14 @@ page {
 }
 
 .home-tight .banner-section {
-  min-height: 196rpx;
+  min-height: 0;
 }
 
 .home-tight .scan-action {
+  --scan-content-height: 54rpx;
   height: 112rpx;
   gap: 20rpx;
   font-size: 43rpx;
-}
-
-.home-tight .scan-action.first-scan-mode {
-  height: 132rpx;
-  font-size: 48rpx;
 }
 
 .home-tight .scan-icon-wrap,
@@ -848,20 +883,16 @@ page {
   width: 50rpx;
 }
 
-.home-tight .secondary-actions {
-  gap: 16rpx;
-}
-
 .home-tight .secondary-action {
   height: 82rpx;
   padding: 0 16rpx !important;
-  gap: 12rpx;
+  gap: 16rpx;
 }
 
 .home-tight .secondary-icon {
-  flex-basis: 34rpx;
-  width: 34rpx;
-  height: 34rpx;
+  flex-basis: 44rpx;
+  width: 44rpx;
+  height: 44rpx;
 }
 
 .home-tight .secondary-copy {
@@ -869,11 +900,11 @@ page {
 }
 
 .home-tight .secondary-title {
-  font-size: 25rpx;
+  font-size: 28rpx;
 }
 
 .home-tight .secondary-subtitle {
-  font-size: 18rpx;
+  font-size: 20rpx;
 }
 
 .home-tight .save-badge {
@@ -889,6 +920,8 @@ page {
 
 .home-tight .last-use-row {
   min-height: 58rpx;
+  padding-top: 10rpx;
+  padding-bottom: 10rpx;
 }
 
 .home-tight .last-use-content {
@@ -898,30 +931,23 @@ page {
 
 .home-tight .last-use-icon,
 .home-tight .rescan-icon {
+  flex-basis: 30rpx;
   width: 30rpx;
   height: 30rpx;
 }
 
-.home-tall {
-  --page-gap: 32rpx;
-  --section-gap: 30rpx;
-}
-
 .home-tall .account-card {
   flex-basis: 150rpx;
+  height: 150rpx;
 }
 
 .home-tall .guest-login-card {
   flex-basis: 150rpx;
+  height: 150rpx;
 }
 
 .home-tall .scan-action {
   height: 160rpx;
-}
-
-.home-tall .scan-action.first-scan-mode {
-  height: 186rpx;
-  font-size: 64rpx;
 }
 
 .home-tall .secondary-action {
@@ -935,3 +961,19 @@ page {
   }
 
 }
+.review-entry {
+  position: absolute;
+  left: 12rpx;
+  bottom: 12rpx;
+  z-index: 4;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 8rpx 16rpx !important;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #1559c5;
+  background: #ffffff;
+  border: 1rpx solid #c7d8f1;
+  border-radius: 8rpx;
+}
+.review-home-notice { position: absolute; top: 0; left: 0; right: 0; z-index: 4; padding: 8rpx; color: #774b12; background: #fff0ce; font-size: 22rpx; text-align: center; }

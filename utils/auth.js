@@ -1,6 +1,6 @@
 const api = require('./api')
 const { STORAGE_KEYS } = require('./config')
-const { ensureLogin } = require('./request')
+const { ensureLogin, hasStoredSession } = require('./request')
 
 function isPhoneBound(user) {
   return !!(user && user.phone)
@@ -33,6 +33,9 @@ function normalizeBindPhoneResult(result) {
 }
 
 function ensurePhoneBound() {
+  if (!hasStoredSession()) {
+    return Promise.reject(createPhoneRequiredError())
+  }
   return ensureLogin()
     .then((loginUser) => {
       if (isPhoneBound(loginUser)) {
@@ -47,7 +50,10 @@ function ensurePhoneBound() {
             return user
           }
 
-          throw createPhoneRequiredError()
+          return api.review.status().then((status) => {
+            if (status.reviewMode === true) return user
+            throw createPhoneRequiredError()
+          })
         })
     })
 }

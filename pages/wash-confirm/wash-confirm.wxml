@@ -1,4 +1,5 @@
-<view class="confirm-page">
+<view class="confirm-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
   <view class="progress-strip">
     <view class="progress-track"></view>
     <view class="progress-step completed">
@@ -72,12 +73,14 @@
       <text>计费规则</text>
     </view>
     <view class="billing-copy">
-      <view wx:if="{{machine.cardRule}}">洗车卡 {{machine.cardRule}}，超出部分按场地计费规则结算</view>
-      <view>洗车券1次1张 · 包月会员支持</view>
+      <view wx:if="{{machine.cardRule}}">洗车卡 / 余额支付：{{machine.cardRule}}</view>
+      <view>{{reviewMode ? '仅模拟功能工作时计时，费用由服务端按累计有效秒数结算' : '按设备累计功能使用时长结算，超出起步时长后每开始一分钟计费'}}</view>
+      <view wx:if="{{!reviewMode}}">洗车券1次1张 · 包月会员支持</view>
     </view>
   </view>
 
-  <view class="settlement-section">
+  <scroll-view class="settlement-section" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="settlement-content">
     <view class="section-title">选择结算方式</view>
     <view class="settlement-list">
       <view
@@ -116,14 +119,27 @@
             <image src="/assets/icons/lucide-wallet-orange.svg" mode="aspectFit"></image>
           </view>
           <view class="method-copy">
-            <view class="method-title">余额支付</view>
-            <view class="method-subtitle">余额{{walletBalanceText}}元 · 0.8元/分钟</view>
+            <view class="method-title">{{reviewMode ? '体验余额支付' : '余额支付'}}</view>
+            <view class="method-subtitle">{{reviewMode ? '虚拟余额' : '余额'}}{{walletBalanceText}}元</view>
+            <view class="wallet-pricing">{{machine.balanceRate}}</view>
           </view>
           <view class="method-radio"><view class="radio-core"></view></view>
         </button>
       </view>
     </view>
-  </view>
+    <view wx:if="{{groupBuyEntries.length}}" class="group-buy-actions">
+      <button wx:for="{{groupBuyEntries}}" wx:key="platform" class="group-buy-btn platform-{{item.platform}} {{item.redeemed ? 'redeemed' : ''}}" data-platform="{{item.platform}}" bindtap="openGroupBuy" hover-class="group-buy-hover">
+        <image class="platform-logo" src="{{item.platform === 'meituan' ? '/assets/icons/brand-meituan.png' : '/assets/icons/brand-douyin.png'}}" mode="aspectFit"></image>
+        <view class="platform-divider"></view>
+        <view class="group-buy-copy"><text>{{item.title}}</text><text wx:if="{{item.redeemed}}" class="redeemed-label">验券成功</text></view>
+        <image wx:if="{{!item.redeemed}}" class="platform-chevron" src="{{item.platform === 'meituan' ? '/assets/icons/lucide-chevron-right-dark.png' : '/assets/icons/lucide-chevron-right-white.png'}}" mode="aspectFit"></image>
+        <image class="platform-watermark" src="{{item.platform === 'meituan' ? '/assets/icons/lucide-check-gold.png' : '/assets/icons/lucide-check-cyan.png'}}" mode="aspectFit"></image>
+        <image wx:if="{{item.redeemed}}" class="redeemed-check" src="/assets/icons/lucide-circle-check-blue.png" mode="aspectFit"></image>
+      </button>
+    </view>
+    <view wx:if="{{groupBuyError}}" class="group-buy-error" bindtap="loadGroupBuyEntries">团购入口加载失败，点击重试</view>
+    </view>
+  </scroll-view>
 
   <view class="fixed-action">
     <view class="action-hint">
