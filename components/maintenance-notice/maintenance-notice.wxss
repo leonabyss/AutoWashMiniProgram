@@ -1,0 +1,15 @@
+.maintenance-mask { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; padding: 40rpx; box-sizing: border-box; background: rgba(18, 30, 50, .48); }
+.maintenance-dialog { display: flex; flex-direction: column; width: 100%; max-width: 620rpx; min-width: 0; height: 640rpx; max-height: calc(100vh - 80rpx); padding: 36rpx; box-sizing: border-box; border-radius: 16rpx; background: #fff; box-shadow: 0 24rpx 80rpx rgba(15, 45, 90, .18); }
+.maintenance-header { display: flex; flex-shrink: 0; align-items: center; gap: 20rpx; margin-bottom: 28rpx; }
+.maintenance-icon { width: 80rpx; height: 80rpx; flex: 0 0 80rpx; display: flex; align-items: center; justify-content: center; border-radius: 16rpx; background: #edf4ff; }
+.maintenance-icon image { width: 44rpx; height: 44rpx; }
+.maintenance-title { min-width: 0; color: #172033; font-size: 34rpx; font-weight: 600; line-height: 1.4; }
+.maintenance-body { flex: 1; height: 0; min-height: 0; }
+.maintenance-message { color: #627086; font-size: 28rpx; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.maintenance-time { margin-top: 24rpx; padding: 22rpx; border-radius: 10rpx; background: #f2f6fc; }
+.time-label, .time-value { display: block; line-height: 1.6; }
+.time-label { color: #627086; font-size: 23rpx; }
+.time-value { margin-top: 6rpx; color: #1262e8; font-size: 28rpx; font-weight: 600; overflow-wrap: anywhere; }
+.maintenance-confirm { display: block; flex-shrink: 0; width: 100%; margin: 32rpx 0 0; padding: 24rpx 16rpx; box-sizing: border-box; border: 0; border-radius: 10rpx; color: #fff; background: #1262e8; font-size: 29rpx; font-weight: 600; line-height: 1.4; }
+.maintenance-confirm::after { border: 0; }
+.maintenance-confirm-hover { background: #0b53ce; }

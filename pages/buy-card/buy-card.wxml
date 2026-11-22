@@ -1,4 +1,6 @@
-<view class="buy-page {{reviewMode ? 'review-flow-mode' : ''}}">
+<maintenance-notice />
+<view wx:if="{{!legacyHidden}}" class="buy-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <button class="new-buy-entry" bindtap="openNewBuyCard">新版购卡页面 ›</button>
   <include src="../../components/review-notice/review-notice.wxml" />
   <view wx:if="{{reviewMode}}" class="review-account-note">购卡与充值仅模拟确认流程，保存本机记录，不扣款、不增加后台体验余额。</view>
   <view class="overview-bar">
@@ -76,7 +78,7 @@
               <text class="product-price">{{item.displayPrice}}</text>
             </view>
             <text class="product-rights">{{item.rightsText}}</text>
-            <view class="purchase-button">{{reviewMode ? (activeCategory === 'member' ? '模拟购卡' : '模拟充值') : '立即购买'}}</view>
+            <view class="purchase-button">{{reviewMode ? (activeCategory === 'wash-card' ? '模拟充值' : '模拟购卡') : '立即购买'}}</view>
           </view>
 
           <view wx:if="{{item.badgeImageUrl}}" class="cms-badge image-badge">
@@ -130,7 +132,7 @@
   <view wx:if="{{rulesExpanded}}" id="rules-panel" class="rules-panel">
     <view class="rule-item">1. 洗车卡全国泡泡洗车点通用；购买多张洗车卡，余额将叠加，有效期将顺延。</view>
     <view class="rule-item">2. 洗车券限于购买洗车卡所在洗车点内使用，以实际购买订单展示为准。</view>
-    <view class="rule-item">3. 包月会员当日洗车上限30分钟，会员天数或洗车额度消耗完后失效。</view>
+    <view class="rule-item">3. 包月会员额度和有效期以所选场地商品为准，每日使用上限以洗车设备规则为准。</view>
     <view class="rule-item">4. 请在有效期内及时使用洗车卡和洗车券。</view>
     <view class="rule-item">5. 购买或续费成功后，相应费用不予退还。</view>
   </view>
@@ -242,7 +244,7 @@
 
   <phone-auth
     visible="{{phoneAuthVisible}}"
-    title="微信手机号登录"
+    title="手机号快捷登录"
     desc="购买洗车卡前需要授权手机号，用于绑定会员卡、洗车券和支付订单。"
     bindsuccess="onPhoneAuthSuccess"
     bindcancel="onPhoneAuthCancel"

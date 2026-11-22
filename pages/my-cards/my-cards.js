@@ -45,6 +45,7 @@ function statusText(status, fallback) {
     cancelled: '已取消',
     canceled: '已取消',
     refunded: '已退款',
+    refund_review: '退款权益核实中，暂不可用',
     invalid: '已失效',
     revoked: '已作废',
     deleted: '已删除'
@@ -78,7 +79,9 @@ function normalizeCard(card) {
   const times = Number(card.remainingTimes || 0)
   let remainText = '暂无可用额度'
 
-  if (amountCent > 0) {
+  if (String(card.cardKind || '').toLowerCase() === 'single_card') {
+    remainText = `剩余 ${times} 次` + (Number(card.singleUseDurationSec) > 0 ? ` · ${secToText(card.singleUseDurationSec)}/次` : '')
+  } else if (amountCent > 0) {
     remainText = `余额 ¥${centToYuan(amountCent)}`
   } else if (durationSec > 0) {
     remainText = `剩余 ${secToText(durationSec)}`
@@ -182,7 +185,7 @@ Page({
           validFromText: '--', validToText: '未发放真实权益',
           productOrderNo: '模拟记录（未生成后台订单）'
         })) : []
-        const normalizedCards = previewCards.concat((cards || []).concat(temporaryCards || []).map(normalizeCard))
+        const normalizedCards = previewCards.concat((cards || []).concat(temporaryCards || []).filter(card=>String(card.status||'').toLowerCase()!=='refunded').map(normalizeCard))
         const memberCards = normalizedCards.filter((card) => card.category === 'member')
         const washCards = normalizedCards.filter((card) => card.category === 'washCard')
         const coupons = normalizedCards

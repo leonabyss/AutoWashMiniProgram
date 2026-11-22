@@ -8,7 +8,7 @@ Component({
     },
     title: {
       type: String,
-      value: '微信手机号登录'
+      value: '手机号快捷登录'
     },
     desc: {
       type: String,

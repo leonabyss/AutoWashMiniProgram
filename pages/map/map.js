@@ -1,6 +1,6 @@
 const api = require('../../utils/api')
 const { ensurePhoneBound } = require('../../utils/auth')
-const { ensureLogin, hasStoredSession } = require('../../utils/request')
+const { ensureLogin, hasStoredSession, login } = require('../../utils/request')
 const { API_BASE_URL } = require('../../utils/config')
 const { meterToDistance } = require('../../utils/format')
 
@@ -285,9 +285,12 @@ Page({
   data: {
     stations: [],
     latitude: 0,
+    mapScale: 14,
     longitude: 0,
     userLocation: null,
     markers: [],
+    countListVisible: false,
+    countStations: [],
     statusLegends: [
       { key: 'closed', label: '非营业时间', color: STATUS_COLORS.closed },
       { key: 'idle', label: '空闲', color: STATUS_COLORS.idle },
@@ -326,7 +329,31 @@ Page({
     this.loadMapPage()
   },
 
+  onShow() {
+    this.mapVisible = true
+    if (this.mapStatusTimer) clearInterval(this.mapStatusTimer)
+    this.mapStatusTimer = setInterval(() => this.refreshMapStatus(), 3000)
+    if (this.data.stations.length) this.refreshMapStatus()
+  },
+
+  onHide() {
+    this.mapVisible = false
+    if (this.mapStatusTimer) clearInterval(this.mapStatusTimer)
+    this.mapStatusTimer = null
+  },
+
+  refreshMapStatus() {
+    if (!this.mapVisible || this.mapStatusRefreshing || this.data.loading) return
+    this.mapStatusRefreshing = true
+    const station = this.data.selectedStation
+    const task = this.data.detailVisible && station
+      ? this.loadSiteDetail(station.siteId, true)
+      : this.loadMapMarkers({ useBounds: !this.cityId, showLoading: false })
+    return Promise.resolve(task).finally(() => { this.mapStatusRefreshing = false })
+  },
+
   onUnload() {
+    this.onHide()
     if (this.sheetCloseTimer) clearTimeout(this.sheetCloseTimer)
     if (this.regionTimer) {
       clearTimeout(this.regionTimer)
@@ -381,6 +408,7 @@ Page({
     }
 
     return api.regions.districts(cityId).then((items) => {
+      if (String(cityId) !== String(this.cityId)) return
       const districts = [{ districtCode: '', districtName: '全部区域' }].concat(Array.isArray(items) ? items : [])
       const districtIndex = this.districtCode
         ? Math.max(districts.findIndex((item) => String(item.districtCode) === String(this.districtCode)), 0)
@@ -395,25 +423,51 @@ Page({
     const city = this.data.cityOptions[cityIndex] || this.data.cityOptions[0]
     this.cityId = city.cityId || ''
     this.districtCode = ''
-    this.setData({ cityIndex, districtIndex: 0 })
-    this.loadDistrictOptions(this.cityId).finally(() => {
-      this.loadMapMarkers({ useBounds: false })
-      if (this.data.siteKeyword) this.scheduleSiteSearch(0)
+    this.resetRegionSelection()
+    this.setData({ cityIndex, districtIndex: 0, districtOptions: [{ districtCode: '', districtName: '全部区域' }] })
+    this.loadDistrictOptions(this.cityId).catch(() => {
+      wx.showToast({ title: '区域加载失败，请重新选择城市', icon: 'none' })
     })
+    this.loadMapMarkers({ useBounds: false, focusResults: true })
+    if (this.data.siteKeyword) this.scheduleSiteSearch(0)
   },
 
   onDistrictChange(event) {
     const districtIndex = Number(event.detail.value || 0)
     const district = this.data.districtOptions[districtIndex] || this.data.districtOptions[0]
     this.districtCode = district.districtCode || ''
+    this.resetRegionSelection()
     this.setData({ districtIndex })
-    this.loadMapMarkers({ useBounds: false })
+    this.loadMapMarkers({ useBounds: false, focusResults: true })
     if (this.data.siteKeyword) this.scheduleSiteSearch(0)
+  },
+
+  resetRegionSelection() {
+    if (this.regionTimer) clearTimeout(this.regionTimer)
+    if (this.sheetCloseTimer) clearTimeout(this.sheetCloseTimer)
+    this.regionTimer = null
+    this.sheetCloseTimer = null
+    this.sheetClosing = false
+    this.sheetTouch = null
+    this.setData({ detailVisible: false, selectedStation: null, sheetOffset: 0, sheetDragging: false, countListVisible: false })
+  },
+
+  focusStations(stations) {
+    const points = stations.filter((station) => station.latitude && station.longitude)
+      .map((station) => ({ latitude: station.latitude, longitude: station.longitude }))
+    if (!points.length) {
+      wx.showToast({ title: '当前筛选范围暂无场地', icon: 'none' })
+      return
+    }
+    if (!this.mapContext) this.mapContext = wx.createMapContext('stationMap', this)
+    this.setData({ latitude: points[0].latitude, longitude: points[0].longitude, mapScale: 14 }, () => {
+      if (points.length > 1) this.mapContext.includePoints({ points, padding: [70, 50, 70, 50] })
+    })
   },
 
   onSiteKeywordInput(event) {
     const siteKeyword = String(event.detail.value || '')
-    this.setData({ siteKeyword, searchVisible: true, searchTitle: '搜索结果' })
+    this.setData({ siteKeyword, searchVisible: true, searchTitle: '搜索结果', countListVisible: false })
     this.scheduleSiteSearch(300)
   },
 
@@ -469,11 +523,11 @@ Page({
       wx.showModal({
         title: '登录后查看',
         content: '登录后可查看近期洗过的场地，也可以直接搜索洗车点。',
-        confirmText: '微信登录',
+        confirmText: '立即登录',
         cancelText: '暂不登录',
         success: (result) => {
           if (!result.confirm) return
-          ensureLogin()
+          login()
             .then(() => this.showRecentSites())
             .catch((err) => wx.showToast({ title: err.message || '登录失败，请重试', icon: 'none' }))
         }
@@ -484,7 +538,7 @@ Page({
     const requestId = (this.siteSearchRequestId || 0) + 1
     this.siteSearchRequestId = requestId
     const location = this.data.userLocation || {}
-    this.setData({ searchVisible: true, searchLoading: true, searchTitle: '近期洗过的场地' })
+    this.setData({ searchVisible: true, searchLoading: true, searchTitle: '近期洗过的场地', countListVisible: false })
     return api.sites.recent({
       lat: location.latitude,
       lng: location.longitude,
@@ -523,7 +577,20 @@ Page({
   },
 
   closeSiteSearch() {
-    if (this.data.searchVisible) this.setData({ searchVisible: false })
+    this.setData({ searchVisible: false, countListVisible: false })
+  },
+
+  toggleCountList() {
+    this.setData({
+      countListVisible: !this.data.countListVisible,
+      countStations: this.getFilteredStations(this.data.stations),
+      searchVisible: false
+    })
+  },
+
+  selectCountStation(event) {
+    this.setData({ countListVisible: false })
+    this.selectStation(event.currentTarget.dataset.siteId, true)
   },
 
   selectSearchSite(event) {
@@ -575,7 +642,15 @@ Page({
           x: 0.5,
           y: 1
         },
-        callout: {
+        callout: station.hasFreeWashActivity === true ? {
+          content: '活动进行中',
+          color: '#ffffff',
+          bgColor: '#a64106',
+          fontSize: 12,
+          borderRadius: 6,
+          padding: 5,
+          display: 'ALWAYS'
+        } : {
           content: `${station.name}  ${station.statusText}`,
           color: STATUS_COLORS[station.statusClass] || '#13223a',
           fontSize: 13,
@@ -587,17 +662,59 @@ Page({
       }))
   },
 
+  readFreeWashActivity(siteId) {
+    if (!this.activityChecks) this.activityChecks = new Map()
+    const key = String(siteId)
+    const cached = this.activityChecks.get(key)
+    if (cached && (cached.pending || cached.expiresAt > Date.now())) return cached.promise
+
+    const check = { pending: true, active: cached && cached.active }
+    check.promise = api.freeWash.list(siteId)
+      .then((data) => Array.isArray(data && data.items) ? data.items.length > 0 : undefined)
+      .catch(() => undefined)
+      .then((active) => {
+        check.pending = false
+        if (typeof active === 'boolean') check.active = active
+        check.expiresAt = Date.now() + (active === undefined ? 5000 : 30000)
+        return active
+      })
+    this.activityChecks.set(key, check)
+    return check.promise
+  },
+
+  async loadMarkerActivities(stations, requestId) {
+    const unchecked = stations.filter((site) => site.siteId && typeof site.hasFreeWashActivity !== 'boolean')
+    for (let i = 0; i < unchecked.length; i += 4) {
+      if (!this.mapVisible || requestId !== this.markerRequestId) return
+      const results = await Promise.all(unchecked.slice(i, i + 4).map(async (site) =>
+        [String(site.siteId), await this.readFreeWashActivity(site.siteId)]))
+      if (!this.mapVisible || requestId !== this.markerRequestId) return
+      const flags = new Map(results.filter(([, active]) => typeof active === 'boolean'))
+      if (!flags.size) continue
+
+      const current = this.data.stations.map((site) => {
+        const flag = flags.get(String(site.siteId))
+        return typeof flag === 'boolean' && site.hasFreeWashActivity !== flag
+          ? { ...site, hasFreeWashActivity: flag } : site
+      })
+      if (current.every((site, index) => site === this.data.stations[index])) continue
+      const filtered = this.getFilteredStations(current)
+      this.setData({ stations: current, countStations: filtered, markers: this.buildMarkers(filtered) })
+    }
+  },
+
   changeFilter(event) {
     const activeFilter = event.currentTarget.dataset.key
     if (activeFilter === this.data.activeFilter) return
 
     const applyFilter = () => {
+      this.resetRegionSelection()
       this.setData({
         activeFilter,
         detailVisible: false,
         selectedStation: null
       })
-      this.loadMapMarkers({ useBounds: true })
+      this.loadMapMarkers({ useBounds: !this.cityId, focusResults: !!this.cityId && activeFilter !== 'member' })
     }
 
     if (activeFilter === 'member') {
@@ -696,7 +813,8 @@ Page({
     if (this.districtCode) params.districtCode = this.districtCode
     if (this.data.activeFilter === 'member') params.isMember = true
 
-    if (bounds && bounds.southwest && bounds.northeast) {
+    // A selected city/district defines the result set, not the user's map viewport.
+    if (!this.cityId && !this.districtCode && bounds && bounds.southwest && bounds.northeast) {
       params.minLat = bounds.southwest.latitude
       params.maxLat = bounds.northeast.latitude
       params.minLng = bounds.southwest.longitude
@@ -731,11 +849,17 @@ Page({
         const list = apiStations
           .map((item, index) => Object.assign({}, item, { markerId: index + 1 }))
 
+        // Keep the previous confirmed badge while polling an older backend.
+        const displayed = list.map((site) => {
+          const cached = this.activityChecks && this.activityChecks.get(String(site.siteId))
+          return typeof site.hasFreeWashActivity !== 'boolean' && cached && typeof cached.active === 'boolean'
+            ? { ...site, hasFreeWashActivity: cached.active } : site
+        })
+        const filtered = this.getFilteredStations(displayed)
         const nextData = {
-          stations: list,
-          markers: this.buildMarkers(this.getFilteredStations(list)),
-          selectedStation: null,
-          detailVisible: false
+          stations: displayed,
+          countStations: filtered,
+          markers: this.buildMarkers(filtered)
         }
 
         if (!this.data.userLocation && list.length) {
@@ -744,6 +868,9 @@ Page({
         }
 
         this.setData(nextData)
+        this.loadMarkerActivities(list, requestId)
+
+        if (settings.focusResults) this.focusStations(this.getFilteredStations(list))
 
         if (settings.initial && this.initialSiteId) {
           const siteId = this.initialSiteId
@@ -757,9 +884,8 @@ Page({
         if (!this.data.stations.length || settings.initial) {
           this.setData({
             stations: [],
-            markers: [],
-            selectedStation: null,
-            detailVisible: false
+            countStations: [],
+            markers: []
           })
         } else {
           this.setData({
@@ -780,6 +906,7 @@ Page({
   },
 
   onRegionChange(event) {
+    if (this.data.detailVisible) return
     const detail = event.detail || {}
     const phase = detail.type || event.type
     const causedBy = detail.causedBy
@@ -789,6 +916,7 @@ Page({
 
     if (this.regionTimer) clearTimeout(this.regionTimer)
     this.regionTimer = setTimeout(() => {
+      if (this.data.detailVisible) return
       this.loadMapMarkers({ useBounds: true })
     }, 400)
   },
@@ -804,6 +932,10 @@ Page({
 
     if (!station) return
 
+    if (this.regionTimer) {
+      clearTimeout(this.regionTimer)
+      this.regionTimer = null
+    }
     if (this.sheetCloseTimer) clearTimeout(this.sheetCloseTimer)
     this.sheetClosing = false
     this.sheetTouch = null
@@ -821,18 +953,22 @@ Page({
     this.loadSiteDetail(station.siteId)
   },
 
-  loadSiteDetail(siteId) {
-    Promise.all([
-      api.sites.detail(siteId).catch(() => null),
-      api.sites.machines(siteId).catch(() => [])
+  loadSiteDetail(siteId, silent) {
+    const detailRequestId = this.detailRequestId = (this.detailRequestId || 0) + 1
+    return Promise.all([
+      api.sites.detail(siteId),
+      api.sites.machines(siteId)
     ])
-      .then(([detail, machines]) => {
-        if (!this.data.selectedStation || String(this.data.selectedStation.siteId) !== String(siteId)) return
+      .then(async ([detail, machines]) => {
+        const active = typeof (detail && detail.hasFreeWashActivity) === 'boolean'
+          ? detail.hasFreeWashActivity : await this.readFreeWashActivity(siteId)
+        if (detailRequestId !== this.detailRequestId || !this.data.selectedStation || String(this.data.selectedStation.siteId) !== String(siteId)) return
         const previousCoverImageUrl = this.data.selectedStation && this.data.selectedStation.coverImageUrl
         const previousImageUrls = (this.data.selectedStation && this.data.selectedStation.imageUrls) || []
         const base = Object.assign({}, this.data.selectedStation || {}, detail || {})
+        if (typeof active === 'boolean') base.hasFreeWashActivity = active
         const merged = Object.assign({}, base, {
-          machines: (machines && machines.length) ? machines : (base.machines || [])
+          machines: machines || []
         })
         const normalizedStation = normalizeStation(merged, this.data.userLocation)
         const imageUrls = normalizedStation.imageUrls.length ? normalizedStation.imageUrls : previousImageUrls
@@ -845,12 +981,18 @@ Page({
 
         this.setData({
           stations,
+          countStations: this.getFilteredStations(stations),
           selectedStation: station,
           photoIndex,
           markers: this.buildMarkers(this.getFilteredStations(stations))
         })
       })
       .catch((err) => {
+        if (detailRequestId !== this.detailRequestId) return
+        if (this.data.selectedStation && String(this.data.selectedStation.siteId) === String(siteId)) {
+          this.setData({ 'selectedStation.statusText': '状态待确认', 'selectedStation.statusClass': 'offline' })
+        }
+        if (silent) return
         wx.showToast({
           title: err.message || '场地详情加载失败',
           icon: 'none'
@@ -985,6 +1127,13 @@ Page({
       name: station.name,
       address: station.address,
       scale: 18
+    })
+  },
+
+  openFreeWashActivities() {
+    const site = this.data.selectedStation
+    if (site && site.siteId && site.hasFreeWashActivity === true) wx.navigateTo({
+      url: '/pages/free-wash-activities/free-wash-activities?siteId=' + encodeURIComponent(site.siteId) + '&siteName=' + encodeURIComponent(site.name || '')
     })
   },
 

@@ -1,0 +1,33 @@
+<view class="franchise-page">
+  <view class="franchise-heading">
+    <image src="/assets/tabbar/wash-active.png" mode="aspectFit" />
+    <view><text class="franchise-brand">泡泡洗车</text><view class="franchise-title">我要加盟</view></view>
+  </view>
+  <view wx:if="{{submitted}}" class="franchise-section">
+    <view class="franchise-section-title">加盟意向已提交</view>
+    <text>请留意来电，我们会通过你留下的手机号联系。</text>
+    <button class="franchise-submit" bindtap="goMine">返回我的</button>
+  </view>
+  <form wx:else bindsubmit="submit">
+    <view class="franchise-section">
+      <view class="franchise-section-title">联系信息</view>
+      <label>联系人 <input name="contactName" maxlength="40" placeholder="输入姓名" disabled="{{submitting}}" /></label>
+      <label>联系电话 <input name="phone" type="number" maxlength="11" placeholder="输入手机号" disabled="{{submitting}}" /></label>
+    </view>
+    <view class="franchise-section">
+      <view class="franchise-section-title">加盟意向</view>
+      <label>意向城市 <input name="city" maxlength="60" placeholder="例如：郑州市" disabled="{{submitting}}" /></label>
+      <view class="franchise-field">场地情况
+        <picker range="{{venues}}" bindchange="chooseVenue" disabled="{{submitting}}">
+          <view class="franchise-picker">{{venueIndex < 0 ? '请选择场地情况' : venues[venueIndex]}}<text>›</text></view>
+        </picker>
+      </view>
+      <label>补充说明（选填）<textarea name="note" maxlength="300" placeholder="可填写意向区域或场地情况" disabled="{{submitting}}" /></label>
+    </view>
+    <checkbox-group bindchange="changeConsent">
+      <label class="franchise-consent"><checkbox value="contact" color="#1262e8" disabled="{{submitting}}" />同意将所填信息用于加盟沟通联系</label>
+    </checkbox-group>
+    <view wx:if="{{error}}" class="franchise-error">{{error}}</view>
+    <button class="franchise-submit" form-type="submit" loading="{{submitting}}" disabled="{{submitting}}">提交加盟意向</button>
+  </form>
+</view>

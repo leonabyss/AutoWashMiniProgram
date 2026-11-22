@@ -1,3 +1,4 @@
+<maintenance-notice />
 <view class="new-home-page {{homeSizeClass}}" style="{{homeViewportStyle}}">
   <view class="new-home-content">
     <button
@@ -51,8 +52,8 @@
     </view>
 
     <view class="banner-section">
-      <button wx:if="{{review.enabled === true || review.reviewMode === true}}" class="review-entry" bindtap="openReview">{{review.reviewMode ? '退出体验' : '审核体验码'}}</button>
-      <view wx:if="{{review.reviewMode}}" class="review-home-notice">审核体验模式（模拟设备及余额）</view>
+      <button wx:if="{{review.reviewMode === true || (review.enabled === true && !review.developerAvailable)}}" class="review-entry" bindtap="openReview">{{review.developerMode ? '退出测试' : review.reviewMode ? '退出体验' : '审核体验码'}}</button>
+      <view wx:if="{{review.reviewMode || review.developerAvailable}}" class="review-home-notice">{{review.developerAvailable ? '开发测试：使用模拟设备及余额' : review.displayName}}</view>
       <swiper
         class="banner-swiper"
         autoplay
@@ -113,7 +114,7 @@
           <image class="scan-icon" src="/assets/icons/lucide-qr-code-white.svg" mode="aspectFit"></image>
           <view wx:if="{{!resumableOrder}}" class="scan-beam"></view>
         </view>
-        <text class="scan-action-label">{{resumableOrder ? '继续洗车' : '扫码洗车'}}</text>
+        <text class="scan-action-label">{{review.developerAvailable ? '模拟洗车' : '扫码洗车'}}</text>
       </button>
 
       <view class="secondary-actions">
@@ -153,7 +154,7 @@
 
   <phone-auth
     visible="{{phoneAuthVisible}}"
-    title="微信手机号登录"
+    title="手机号快捷登录"
     desc="扫码洗车前需要授权手机号，用于识别会员、余额和当前订单。"
     bindsuccess="onPhoneAuthSuccess"
     bindcancel="onPhoneAuthCancel"

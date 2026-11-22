@@ -299,6 +299,8 @@ page {
 }
 
 .finish-bottom {
+  display: flex;
+  gap: 16rpx;
   margin-top: auto;
   padding: 20rpx 40rpx calc(24rpx + var(--safe-bottom));
   flex: 0 0 auto;
@@ -319,6 +321,9 @@ page {
   background: #1262e8;
   box-shadow: 0 14rpx 28rpx rgba(18, 98, 232, 0.2);
 }
+
+.finish-bottom .home-btn { flex: 1 1 0; min-width: 0; }
+.finish-bottom .parking-btn { background: #edf4ff; color: #1262e8; box-shadow: none; }
 
 .home-btn image {
   width: 42rpx;

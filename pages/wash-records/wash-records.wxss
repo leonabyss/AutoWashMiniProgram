@@ -123,3 +123,4 @@
 .bottom-tip {
   padding: 18rpx 0 40rpx;
 }
+.parking-entry { margin: 20rpx 0 0 auto; padding: 12rpx 24rpx; width: fit-content; min-height: 64rpx; border-radius: 12rpx; color: #1262e8; background: #edf4ff; font-size: 26rpx; line-height: 1.5; }

@@ -1,3 +1,4 @@
+<maintenance-notice />
 <view class="map-page">
   <view class="map-filter-panel">
     <view class="site-search-row">
@@ -65,7 +66,15 @@
           <text>{{item.label}}</text>
         </view>
       </view>
-      <text class="site-count">{{markers.length}}个场地</text>
+      <text class="site-count" bindtap="toggleCountList" role="button" aria-label="查看当前筛选场地列表">{{markers.length}}个场地</text>
+    </view>
+    <view wx:if="{{countListVisible}}" class="site-search-results count-site-results">
+      <view class="search-result-header"><text>当前筛选场地</text><text>{{countStations.length}}个</text></view>
+      <button wx:for="{{countStations}}" wx:key="siteId" class="site-search-result" data-site-id="{{item.siteId}}" bindtap="selectCountStation">
+        <view class="search-result-copy"><text class="search-result-name">{{item.name}}</text><text class="search-result-address">{{item.address}}</text></view>
+        <view class="search-result-meta"><text wx:if="{{item.hasFreeWashActivity === true}}" class="count-activity">活动进行中</text><text>{{item.statusText}}</text><text>{{item.idle}} / {{item.total}}台空闲</text><text>{{item.distance}}</text></view>
+      </button>
+      <view wx:if="{{!countStations.length}}" class="search-result-empty">当前筛选范围暂无场地</view>
     </view>
   </view>
 
@@ -75,10 +84,11 @@
     latitude="{{latitude}}"
     longitude="{{longitude}}"
     markers="{{markers}}"
-    scale="14"
+    scale="{{mapScale}}"
     show-location
     bindtap="closeSiteSearch"
     bindmarkertap="onMarkerTap"
+    bindcallouttap="onMarkerTap"
     bindregionchange="onRegionChange"
   >
     <cover-view wx:if="{{!detailVisible}}" class="locate-control" bindtap="moveToCurrentLocation">
@@ -127,6 +137,10 @@
         <view class="site-title-row">
           <view class="site-title-copy">
             <view class="site-title">{{selectedStation.name}}</view>
+            <view wx:if="{{selectedStation.hasFreeWashActivity === true}}" class="detail-activity-badge">
+              <image src="/assets/icons/lucide-ticket-blue.png" mode="aspectFit" />
+              <text>活动进行中</text>
+            </view>
             <view class="site-meta-row">
               <text class="status-badge status-{{selectedStation.statusClass}}">{{selectedStation.statusText}}</text>
               <text>共 {{selectedStation.total}} 台机器</text>
@@ -176,6 +190,15 @@
 
         <view class="detail-divider"></view>
 
+        <view class="business-row activity-row">
+          <text class="section-title">场地活动</text>
+          <button wx:if="{{selectedStation.hasFreeWashActivity === true}}" class="free-wash-link" bindtap="openFreeWashActivities" hover-class="free-wash-link-pressed">
+            <text>查看免费洗车券</text>
+            <image src="/assets/icons/lucide-chevron-right-dark.png" mode="aspectFit" />
+          </button>
+          <text wx:else class="activity-empty">{{selectedStation.hasFreeWashActivity === false ? '暂无活动' : '活动待确认'}}</text>
+        </view>
+
         <view class="business-row">
           <text class="section-title">营业时间</text>
           <text>{{selectedStation.openingText || '24小时'}}</text>
@@ -207,7 +230,7 @@
 
   <phone-auth
     visible="{{phoneAuthVisible}}"
-    title="微信手机号登录"
+    title="手机号快捷登录"
     desc="扫码洗车前需要授权手机号，用于识别会员、余额和当前订单。"
     bindsuccess="onPhoneAuthSuccess"
     bindcancel="onPhoneAuthCancel"

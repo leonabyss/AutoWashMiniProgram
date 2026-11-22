@@ -1,0 +1,23 @@
+<maintenance-notice />
+<view class="checkout-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <view wx:if="{{loading}}" class="checkout-state">正在核对场地及套餐信息…</view>
+  <block wx:if="{{product && site}}">
+    <view class="checkout-site"><image src="/assets/icons/lucide-map-pin-blue.svg" mode="aspectFit" /><view><text class="site-label">办卡场地</text><text class="site-title">{{site.name}}</text></view></view>
+    <view class="checkout-product">
+      <view class="product-top"><view class="product-kind"><image src="/assets/icons/{{category.icon}}" mode="aspectFit" /><text>{{category.label}}</text></view><text class="product-price">¥{{priceText}}</text></view>
+      <view class="product-name">{{product.name}}</view>
+      <view class="product-rights"><text wx:for="{{detailLines}}" wx:key="*this">{{item}}</text></view>
+    </view>
+    <view class="rules-section"><view class="section-title">使用规则</view><view class="rules-copy"><text wx:for="{{ruleParts}}" wx:key="index" class="{{item.emphasis ? 'emphasis' : ''}}">{{item.text}}</text></view></view>
+    <button class="notice-row" bindtap="showNotice"><text>购买须知</text><image src="/assets/icons/lucide-chevron-right-dark.png" mode="aspectFit" /></button>
+    <view class="amount-row"><text>套餐金额</text><text>¥{{priceText}}</text></view>
+    <view class="amount-row"><text>应付金额</text><text class="amount-value">¥{{priceText}}</text></view>
+  </block>
+  <view wx:if="{{paid}}" class="checkout-result"><view class="result-title">{{reviewMode ? '模拟购买已完成' : '购买成功'}}</view><text>{{reviewMode ? '仅保存本机体验记录，不发放真实权益。' : '后台已确认支付成功，可返回查看并使用卡券。'}}</text><button class="secondary-button" bindtap="backToUse">返回使用</button></view>
+  <view wx:elif="{{pendingConfirmation}}" class="checkout-result"><view class="result-title">支付结果待确认</view><text>请先核对订单结果，请勿重复付款。</text><button class="secondary-button" bindtap="checkPayment" disabled="{{submitting}}">刷新支付结果</button><button class="order-link" bindtap="openOrders">查看订单中心</button></view>
+  <view wx:if="{{errorText}}" class="checkout-error"><text>{{errorText}}</text><button wx:if="{{!product}}" class="order-link" bindtap="loadData">重新加载</button></view>
+  <view class="checkout-hint">支付结果以订单中心为准</view>
+  <view class="checkout-footer"><view class="footer-amount"><text>应付</text><text class="footer-price">¥{{priceText}}</text></view><button class="pay-button" disabled="{{loading || submitting || !product || paid || pendingConfirmation}}" bindtap="confirmPay">{{paid ? '已完成' : (submitting ? '处理中…' : (pendingConfirmation ? '结果确认中' : (reviewMode ? '确认模拟购买' : '确认支付')))}}</button></view>
+  <phone-auth visible="{{phoneAuthVisible}}" title="手机号快捷登录" desc="登录后核对当前场地的套餐并完成购买。" bindsuccess="onPhoneAuthSuccess" bindcancel="onPhoneAuthCancel" />
+</view>

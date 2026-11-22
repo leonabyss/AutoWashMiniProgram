@@ -92,7 +92,7 @@ function normalizeSummary(summary) {
   const memberCards = summary.memberCards || {}
   const temporaryCards = summary.temporaryCards || {}
   const messages = summary.messages || {}
-  const name = profile.nickname || profile.maskedPhone || profile.phone || '微信用户'
+  const name = profile.nickname || profile.phone || profile.maskedPhone || '小程序用户'
   const accountType = profile.accountType || summary.accountType || ''
   const accountTypeName = profile.accountTypeName || summary.accountTypeName || ''
   const isTest = profile.isTest === true || summary.isTest === true
@@ -105,7 +105,7 @@ function normalizeSummary(summary) {
   }[String(accountType).toLowerCase()] || statusText(profile.accountStatus))
   const user = {
     name,
-    phone: profile.maskedPhone || profile.phone || '',
+    phone: profile.phone || profile.maskedPhone || '',
     avatarUrl: profile.avatarUrl || '',
     memberLevel: isTest || ['server_developer', 'dev_test', 'test_account', 'hardware_log'].indexOf(String(accountType).toLowerCase()) >= 0 ? '洗车用户' : accountLabel,
     accountType,
@@ -159,6 +159,7 @@ Page({
       { title: '订单中心', url: '/pages/recharge-records/recharge-records' },
       { title: '我的洗车卡', url: '/pages/my-cards/my-cards' },
       { title: '联系客服', action: 'contact' },
+      { title: '我要加盟', url: '/pages/franchise/franchise' },
       { title: '关于泡泡fight洗车', action: 'about' }
     ],
     summary: null,
@@ -426,7 +427,7 @@ Page({
 
   handleMenuTap(event) {
     const dataset = event.currentTarget.dataset || {}
-    if (dataset.action === 'contact') return
+    if (dataset.action === 'contact') { wx.navigateTo({url:'/pages/customer-service/customer-service'}); return }
 
     if (dataset.url) {
       wx.navigateTo({ url: dataset.url })

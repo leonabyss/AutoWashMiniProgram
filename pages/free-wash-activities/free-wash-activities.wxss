@@ -1,0 +1,14 @@
+page { background:#f6f8fc; color:#172033; }
+.activity-page { padding:28rpx 28rpx calc(32rpx + env(safe-area-inset-bottom)); }
+.activity-heading { font-size:32rpx; font-weight:600; padding:8rpx 0 22rpx; overflow-wrap:anywhere; }
+.activity-row,.invite { background:#fff; border-bottom:1rpx solid #e6ecf5; padding:22rpx 24rpx; }
+.activity-title { font-size:29rpx; font-weight:600; margin-bottom:8rpx; overflow-wrap:anywhere; }
+.muted { display:block; color:#58677d; font-size:25rpx; line-height:1.65; }
+.activity-actions { display:flex; justify-content:flex-end; margin-top:12rpx; }
+.invite { display:flex; flex-wrap:wrap; align-items:center; gap:12rpx; font-size:26rpx; }
+.activity-page .small-button { margin:0; padding:12rpx 20rpx; min-height:64rpx; border-radius:12rpx; color:#1262e8; background:#edf4ff; font-size:25rpx; line-height:1.5; }
+.activity-page .small-button[disabled] { color:#66758e; background:#f1f4f8; }
+.notice,.error { font-size:26rpx; line-height:1.65; margin:16rpx 0; }
+.notice { color:#16734c; }
+.error { color:#b42318; }
+.error text { margin-left:12rpx; color:#1262e8; }

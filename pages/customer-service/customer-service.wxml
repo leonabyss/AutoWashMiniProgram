@@ -1,0 +1,42 @@
+<view class="support-page">
+  <view class="support-intro">
+    <view class="support-symbol"><image src="/assets/icons/lucide-headphones-blue.svg" mode="aspectFit" /></view>
+    <view class="support-title">有什么可以帮您？</view>
+    <view class="support-subtitle">洗车使用、卡券与订单问题，都可以在这里咨询</view>
+  </view>
+  <view class="support-content">
+    <view class="section-title">本次咨询</view>
+    <view class="support-destination">
+      <view class="destination-icon"><image src="/assets/icons/lucide-map-pin-blue.svg" mode="aspectFit" /></view>
+      <view class="destination-copy" wx:if="{{ready}}">
+        <text class="destination-label">{{routeLabel}}</text>
+        <text class="destination-name">{{siteName}}</text>
+      </view>
+      <view class="destination-copy" wx:elif="{{busy}}">
+        <view class="skeleton skeleton-label" />
+        <view class="skeleton skeleton-name" />
+      </view>
+      <view class="destination-copy" wx:else>
+        <text class="destination-label">客服连接</text>
+        <text class="destination-name">暂未连接</text>
+      </view>
+    </view>
+    <view class="support-hint" wx:if="{{ready}}">{{siteId ? (active ? '本次在线咨询由正在洗车的场地接待。' : '已为您选择最近洗过的场地。') : '本次在线咨询由平台客服接待。'}}</view>
+    <view wx:if="{{ready && servicePhone}}" class="support-phone">
+      <view class="support-phone-copy">
+        <text class="destination-label">{{contactSiteName ? contactSiteName + ' · 客服电话' : '场地客服电话'}}</text>
+        <text class="support-phone-number" selectable>{{servicePhone}}</text>
+      </view>
+      <button class="support-call-button" bindtap="callSite" hover-class="support-call-pressed">拨打电话</button>
+    </view>
+    <view wx:if="{{error}}" class="support-error">
+      <text>{{error}}</text>
+      <button class="retry-button" bindtap="retry" disabled="{{busy}}">重新连接</button>
+    </view>
+    <button class="contact-button" open-type="contact" disabled="{{!ready || busy}}" session-from="support_routed" binderror="contactError" hover-class="contact-pressed">
+      <text>{{busy ? '正在连接客服…' : '开始在线咨询'}}</text>
+    </button>
+    <view class="support-note">您可在会话中发送文字或图片，方便客服了解问题</view>
+  </view>
+</view>
+<maintenance-notice />

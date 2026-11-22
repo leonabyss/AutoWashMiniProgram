@@ -1,0 +1,16 @@
+<view wx:if="{{visible && active}}" class="maintenance-mask" catchtouchmove="noop">
+  <view class="maintenance-dialog" role="dialog" aria-modal="true" aria-label="{{title}}">
+    <view class="maintenance-header">
+      <view class="maintenance-icon"><image src="/assets/icons/lucide-clock-3.svg" mode="aspectFit" /></view>
+      <view class="maintenance-title">{{title}}</view>
+    </view>
+    <scroll-view class="maintenance-body" scroll-y>
+      <view class="maintenance-message">{{message}}</view>
+      <view wx:if="{{restoreTime}}" class="maintenance-time">
+        <text class="time-label">预计恢复时间（北京时间）</text>
+        <text class="time-value">{{restoreTime}}</text>
+      </view>
+    </scroll-view>
+    <button class="maintenance-confirm" hover-class="maintenance-confirm-hover" bindtap="dismiss">我知道了</button>
+  </view>
+</view>

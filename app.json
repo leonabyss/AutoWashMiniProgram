@@ -3,8 +3,15 @@
     "pages/home/home",
     "pages/home-new/home-new",
     "pages/buy-card/buy-card",
+    "pages/buy-card-new/buy-card-new",
+    "pages/card-checkout/card-checkout",
     "pages/map/map",
     "pages/mine/mine",
+    "pages/franchise/franchise",
+    "pages/parking-discount/parking-discount",
+    "pages/free-wash-activities/free-wash-activities",
+    "pages/promotion-claim/promotion-claim",
+    "pages/customer-service/customer-service",
     "pages/messages/messages",
     "pages/message-detail/message-detail",
     "pages/wash-records/wash-records",
@@ -45,7 +52,8 @@
     "weui": true
   },
   "usingComponents": {
-    "phone-auth": "/components/phone-auth/phone-auth"
+    "phone-auth": "/components/phone-auth/phone-auth",
+    "maintenance-notice": "/components/maintenance-notice/maintenance-notice"
   },
   "tabBar": {
     "color": "#b2b7c2",

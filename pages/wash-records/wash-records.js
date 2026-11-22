@@ -2,6 +2,7 @@ const api = require('../../utils/api')
 const { ensureLogin } = require('../../utils/request')
 const { centToYuan, secToText } = require('../../utils/format')
 const { history: reviewHistory } = require('../../utils/review-account')
+const { backendWorkSeconds } = require('../../utils/wash-duration')
 
 function formatDate(value) {
   if (!value) return '--'
@@ -63,14 +64,14 @@ function normalizePage(pageData) {
 
 function normalizeOrder(item) {
   const washStatus = item.washStatus || item.orderStatus
-  const durationSec = Number(item.washDurationSec || item.machineStartSec || item.usedDurationSec || 0)
+  const durationSec = backendWorkSeconds(item)
 
   return {
     orderNo: item.orderNo,
     siteName: item.siteName || '洗车点',
     machineName: item.machineName || '--',
     amountText: `¥${centToYuan(item.amountUsedCent)}`,
-    durationText: durationSec ? secToText(durationSec) : '--',
+    durationText: durationSec === null ? '--' : secToText(durationSec),
     statusText: statusText(washStatus),
     statusClass: String(washStatus || '').toLowerCase(),
     payMethodText: payMethodText(item.payMethod),
@@ -95,6 +96,11 @@ Page({
 
   onLoad() {
     this.loadRecords(true)
+  },
+
+  openParkingDiscount(event) {
+    const orderNo = event.currentTarget.dataset.orderNo
+    if (orderNo) wx.navigateTo({ url: '/pages/parking-discount/parking-discount?orderNo=' + encodeURIComponent(orderNo) })
   },
 
   onPullDownRefresh() {

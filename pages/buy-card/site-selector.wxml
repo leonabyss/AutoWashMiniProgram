@@ -1,0 +1,104 @@
+  <view wx:if="{{siteSelectorVisible}}" class="site-selector-mask" bindtap="closeSiteSelector" catchtouchmove="noop">
+    <view class="site-selector-sheet {{siteSheetDragging ? 'is-dragging' : ''}}" style="transform: translateY({{siteSheetOffset}}px);" catchtap="noop">
+      <view class="site-sheet-grip" catchtouchstart="onSiteSheetStart" catchtouchmove="onSiteSheetMove" catchtouchend="onSiteSheetEnd" catchtouchcancel="onSiteSheetCancel"><view class="site-selector-handle"></view></view>
+      <view class="site-selector-header">
+        <view class="site-selector-heading">
+          <text class="site-selector-title">选择办卡场地</text>
+          <text class="site-selector-desc">仅展示已开通微信收款的办卡场地</text>
+        </view>
+        <button class="site-selector-close" bindtap="closeSiteSelector" aria-label="关闭">
+          <image src="/assets/icons/lucide-x-gray.svg" mode="aspectFit"></image>
+        </button>
+      </view>
+
+      <view class="site-selector-search">
+        <input
+          class="site-selector-input"
+          value="{{siteSelectorKeyword}}"
+          placeholder="输入场地名称或地址"
+          confirm-type="search"
+          maxlength="64"
+          bindinput="onSiteSelectorKeywordInput"
+          bindconfirm="submitPaymentSiteSearch"
+        />
+        <button
+          wx:if="{{siteSelectorKeyword}}"
+          class="site-selector-clear"
+          bindtap="clearSiteSelectorKeyword"
+          aria-label="清空搜索"
+        >×</button>
+        <button class="site-selector-submit" bindtap="submitPaymentSiteSearch">搜索</button>
+      </view>
+
+      <view class="site-region-row">
+        <picker
+          class="site-region-picker"
+          mode="selector"
+          range="{{siteCityOptions}}"
+          range-key="cityName"
+          value="{{siteCityIndex}}"
+          bindchange="onSiteSelectorCityChange"
+        >
+          <view class="site-region-value">
+            <text>{{siteCityOptions[siteCityIndex].cityName}}</text>
+            <image src="/assets/icons/lucide-chevron-down.svg" mode="aspectFit"></image>
+          </view>
+        </picker>
+        <picker
+          class="site-region-picker"
+          mode="selector"
+          range="{{siteDistrictOptions}}"
+          range-key="districtName"
+          value="{{siteDistrictIndex}}"
+          bindchange="onSiteSelectorDistrictChange"
+        >
+          <view class="site-region-value">
+            <text>{{siteDistrictOptions[siteDistrictIndex].districtName}}</text>
+            <image src="/assets/icons/lucide-chevron-down.svg" mode="aspectFit"></image>
+          </view>
+        </picker>
+      </view>
+
+      <view class="site-result-summary">
+        <text>可办卡场地</text>
+        <text wx:if="{{!siteSelectorLoading}}">{{siteSelectorResults.length}}个</text>
+        <text wx:else>查询中...</text>
+      </view>
+
+      <scroll-view class="site-selector-results" scroll-y enhanced show-scrollbar="{{false}}">
+        <view wx:if="{{siteSelectorLoading}}" class="site-selector-loading">
+          <view class="site-loading-line wide"></view>
+          <view class="site-loading-line"></view>
+          <view class="site-loading-line wide"></view>
+          <view class="site-loading-line"></view>
+        </view>
+
+        <button
+          wx:for="{{siteSelectorResults}}"
+          wx:key="siteId"
+          class="site-result-item {{item.selected ? 'selected' : ''}}"
+          data-site-id="{{item.siteId}}"
+          bindtap="selectPaymentSite"
+        >
+          <view class="site-result-pin">
+            <image src="/assets/icons/lucide-map-pin-blue.svg" mode="aspectFit"></image>
+          </view>
+          <view class="site-result-copy">
+            <view class="site-result-name-row">
+              <text class="site-result-name">{{item.siteName}}</text>
+              <text wx:if="{{item.selected}}" class="site-selected-tag">当前</text>
+            </view>
+            <text wx:if="{{item.regionText}}" class="site-result-region">{{item.regionText}}</text>
+            <text class="site-result-address">{{item.address || '暂无详细地址'}}</text>
+          </view>
+          <text class="site-result-arrow">›</text>
+        </button>
+
+        <view wx:if="{{!siteSelectorLoading && !siteSelectorResults.length}}" class="site-selector-empty">
+          <text class="site-selector-empty-title">{{siteSelectorError || '没有找到可办卡场地'}}</text>
+          <text class="site-selector-empty-desc">可切换城市、区域或关键词；仍为空时需先在后台为场地开通微信收款</text>
+          <button class="site-selector-retry" bindtap="submitPaymentSiteSearch">重新查询</button>
+        </view>
+      </scroll-view>
+    </view>
+  </view>

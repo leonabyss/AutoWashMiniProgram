@@ -1,0 +1,16 @@
+page { background: #f6f8fc; color: #172033; }
+.parking-page { padding: 40rpx 32rpx calc(40rpx + env(safe-area-inset-bottom)); }
+.parking-heading { display: flex; align-items: center; gap: 16rpx; flex-wrap: wrap; padding-bottom: 28rpx; border-bottom: 1rpx solid #e1e8f3; }
+.parking-heading image { width: 44rpx; height: 44rpx; flex-shrink: 0; }
+.parking-title { font-size: 34rpx; font-weight: 600; }
+.parking-status { margin-left: auto; font-size: 24rpx; color: #627086; }
+.parking-content { display: flex; flex-direction: column; align-items: center; padding: 48rpx 0; gap: 24rpx; }
+.coupon-name { font-size: 30rpx; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+.coupon-qr { width: 500rpx; max-width: 100%; height: 500rpx; background: #fff; }
+.parking-message { color: #475569; text-align: center; font-size: 28rpx; line-height: 1.7; overflow-wrap: anywhere; }
+.parking-date { font-size: 24rpx; color: #627086; text-align: center; }
+.parking-error { color: #c52a36; font-size: 26rpx; line-height: 1.7; text-align: center; }
+.parking-primary, .parking-refresh { width: 100%; min-height: 88rpx; margin: 12rpx 0 0; padding: 22rpx; font-size: 30rpx; line-height: 1.5; border-radius: 12rpx; }
+.parking-primary { background: #1262e8; color: #fff; }
+.parking-refresh { background: #fff; color: #1262e8; border: 1rpx solid #d8e4f5; }
+.parking-order { display: flex; flex-direction: column; gap: 12rpx; padding-top: 28rpx; border-top: 1rpx solid #e1e8f3; font-size: 24rpx; color: #627086; overflow-wrap: anywhere; }

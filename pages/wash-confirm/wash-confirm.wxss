@@ -142,6 +142,8 @@ page {
 
 .machine-meta {
   display: flex;
+  flex-wrap: wrap;
+  row-gap: 12rpx;
   min-width: 0;
   margin-top: 12rpx;
   align-items: center;
@@ -169,6 +171,10 @@ page {
   background: #cbd5e1;
   box-shadow: none;
 }
+
+.machine-status.unknown .status-dot { background: #cbd5e1; box-shadow: none; }
+.machine-status.busy .status-dot { background: #ffb169; box-shadow: none; }
+.machine-status.maintenance .status-dot { background: #e0c0ff; box-shadow: none; }
 
 .service-btn {
   display: flex;
@@ -198,6 +204,15 @@ page {
 
 .service-btn-hover {
   background: #eaf2ff;
+}
+
+.takeover-status {
+  margin: 16rpx 0;
+  padding: 18rpx;
+  color: #914a15;
+  background: #fff1df;
+  border-radius: 12rpx;
+  font-size: 28rpx;
 }
 
 .timing-section {
@@ -331,15 +346,21 @@ page {
 }
 
 .settlement-list {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: 1fr;
   flex: 0 0 auto;
   width: 100%;
   min-width: 0;
   margin-top: 14rpx;
-  flex-direction: column;
-  justify-content: flex-start;
   gap: 14rpx;
 }
+.first-purchase-prompt { display: flex; align-items: center; flex-wrap: wrap; gap: 18rpx; margin-top: 18rpx; padding: 22rpx; border: 1rpx solid #ffd2b8; border-radius: 12rpx; background: #fff5ed; box-sizing: border-box; }
+.first-purchase-copy { flex: 1 1 220rpx; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
+.first-purchase-title { font-size: 28rpx; line-height: 1.4; font-weight: 600; color: #9a3a0d; }
+.first-purchase-desc { font-size: 23rpx; line-height: 1.5; color: #93664e; overflow-wrap: anywhere; }
+.first-purchase-prompt .first-purchase-button { flex: 0 0 auto; width: auto !important; max-width: 100%; margin: 0; padding: 20rpx 22rpx; border: 0; border-radius: 10rpx; font-size: 26rpx; line-height: 1.4; font-weight: 600; color: #fff; background: #eb5a13; }
+.first-purchase-button::after { border: 0; }
 
 .settlement-row {
   display: flex;
@@ -364,7 +385,7 @@ page {
 .coupon-row {
   width: 100% !important;
   max-width: none !important;
-  padding: 0 20rpx;
+  padding: 14rpx 20rpx;
   align-items: center;
 }
 
@@ -459,6 +480,8 @@ page {
   margin-left: 14rpx;
   align-items: center;
 }
+.method-trailing .inline-buy-assets { flex: 0 0 auto; width: auto !important; margin: 0; padding: 16rpx 18rpx; border: 1rpx solid #1262e8; border-radius: 10rpx; font-size: 24rpx; line-height: 1.4; color: #1262e8; background: #edf4ff; white-space: nowrap; }
+.inline-buy-assets::after { border: 0; }
 
 .method-chevron {
   width: 32rpx;
@@ -497,15 +520,16 @@ page {
 }
 
 .wallet-row {
-  display: grid;
-  grid-template-columns: 104rpx minmax(0, 1fr);
+  display: flex;
+  align-items: stretch;
 }
 
 .recharge-label {
   display: flex;
   width: 104rpx;
   min-width: 104rpx;
-  height: 100%;
+  flex: 0 0 104rpx;
+  align-self: stretch;
   margin: 0;
   padding: 0;
   align-items: center;
@@ -523,15 +547,18 @@ page {
 
 .wallet-select {
   display: flex;
-  width: 100% !important;
+  flex: 1 1 0%;
+  width: auto;
   max-width: none !important;
   min-width: 0;
-  height: 100%;
+  min-height: 112rpx;
+  box-sizing: border-box;
   margin: 0;
   padding: 0 20rpx;
   align-items: center;
   color: #172033;
   text-align: left;
+  line-height: normal;
   background: transparent;
 }
 
@@ -564,6 +591,8 @@ page {
   margin-top: 18rpx;
   padding-bottom: 8rpx;
 }
+
+.group-buy-actions.single-platform { grid-template-columns: minmax(0, 1fr); }
 
 .group-buy-btn {
   position: relative;
@@ -658,6 +687,7 @@ page {
 }
 
 .asset-panel {
+  transition: transform 220ms ease;
   display: flex;
   width: 100%;
   height: 1120rpx;
@@ -668,6 +698,15 @@ page {
   border-radius: 26rpx 26rpx 0 0;
   background: #ffffff;
 }
+.asset-panel.is-dragging { transition: none; }
+.asset-drag-area { flex: 0 0 40rpx; display: flex; align-items: center; justify-content: center; }
+.asset-drag-area .asset-drag-handle { margin: 0; }
+.site-title-line { display: flex; align-items: center; flex-wrap: wrap; gap: 10rpx; }
+.site-title-line .site-name { min-width: 0; max-width: 100%; }
+.membership-support { flex: 0 0 auto; padding: 5rpx 10rpx; border-radius: 6rpx; font-size: 20rpx; line-height: 1.4; color: #e6ecf7; background: rgba(255,255,255,.14); }
+.membership-support.supported { color: #fff; background: rgba(255,255,255,.22); }
+.asset-purchase-footer { flex: 0 0 auto; padding: 18rpx 30rpx calc(18rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #edf0f5; background: #fff; }
+.asset-purchase-footer .asset-buy-card { width: 100% !important; margin: 0; padding: 20rpx 16rpx; border-radius: 10rpx; font-size: 28rpx; line-height: 1.4; color: #fff; background: #1262e8; }
 
 .asset-drag-handle {
   width: 76rpx;
@@ -1012,3 +1051,4 @@ page {
     font-size: 18rpx;
   }
 }
+.free-wash-entry { margin: 12rpx 0; width:auto; display:table; min-height:64rpx; padding:12rpx 18rpx; border-radius:12rpx; font-size:26rpx; line-height:1.5; color:#1262e8; background:#edf4ff; }

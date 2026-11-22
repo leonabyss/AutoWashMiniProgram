@@ -1,0 +1,20 @@
+page { background: #f4f7fc; }
+.claim-page { width: 100%; padding: 28rpx 28rpx calc(32rpx + env(safe-area-inset-bottom)); color: #172033; }
+.coupon-ticket { display: flex; flex-direction: column; align-items: flex-start; gap: 10rpx; padding: 32rpx; border: 1rpx solid #cbdffc; border-radius: 16rpx; background: #eaf3ff; overflow-wrap: anywhere; }
+.ticket-icon { width: 48rpx; height: 48rpx; margin-bottom: 8rpx; }
+.ticket-site { font-size: 25rpx; color: #41628e; }
+.ticket-title { font-size: 38rpx; font-weight: 650; color: #164c9f; line-height: 1.35; }
+.ticket-count { font-size: 26rpx; color: #41628e; }
+.claim-details { margin-top: 24rpx; padding: 0 24rpx; border-radius: 14rpx; background: #fff; }
+.claim-row { display: flex; justify-content: space-between; gap: 20rpx; padding: 20rpx 0; border-bottom: 1rpx solid #e8eef6; font-size: 26rpx; line-height: 1.5; }
+.claim-row:last-child { border-bottom: 0; }
+.claim-row text:first-child { flex-shrink: 0; color: #627086; }
+.claim-row text:last-child { min-width: 0; text-align: right; overflow-wrap: anywhere; }
+.claim-success, .claim-message { margin-top: 22rpx; padding: 18rpx 20rpx; border-radius: 10rpx; font-size: 25rpx; line-height: 1.6; }
+.claim-success { display: flex; flex-direction: column; gap: 4rpx; color: #166447; background: #e8f6ef; }
+.claim-success text:first-child { font-weight: 600; }
+.claim-message { color: #8e450c; background: #fff1df; }
+.claim-page .claim-button { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 94rpx; margin: 24rpx 0 0; padding: 16rpx; border-radius: 14rpx; background: #1262e8; color: #fff; font-size: 30rpx; font-weight: 600; line-height: 1.4; }
+.claim-page .claim-button[disabled] { background: #dbe6f7; color: #526782; }
+.claim-page .claim-pressed { background: #0e50ba; }
+.claim-empty { padding: 44rpx 4rpx; color: #627086; font-size: 28rpx; text-align: center; }

@@ -1,4 +1,6 @@
+<maintenance-notice />
 <view class="confirm-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <phone-auth visible="{{phoneAuthVisible}}" title="手机号快捷登录" desc="登录后继续本次扫码洗车，用于识别余额、卡券和订单。" bindsuccess="onPhoneAuthSuccess" bindcancel="onPhoneAuthCancel" />
   <include src="../../components/review-notice/review-notice.wxml" />
   <view class="progress-strip">
     <view class="progress-track"></view>
@@ -21,12 +23,12 @@
   <view class="machine-band">
     <image class="machine-location-icon" src="/assets/icons/lucide-map-pin-white.svg" mode="aspectFit"></image>
     <view class="machine-copy">
-      <view class="site-name">{{machine.siteName}}</view>
+      <view class="site-title-line"><view class="site-name">{{machine.siteName}}</view><text wx:if="{{!reviewMode && membershipSupport !== 'unknown'}}" class="membership-support {{membershipSupport}}">{{membershipSupport === 'supported' ? '支持包月会员' : '不支持包月会员'}}</text></view>
       <view class="machine-meta">
         <text class="machine-name">{{machine.name}}</text>
-        <view class="machine-status {{machine.onlineStatus === 'online' ? 'online' : 'offline'}}">
+        <view class="machine-status {{machine.statusClass}}">
           <view class="status-dot"></view>
-          <text>{{machine.onlineText}}</text>
+          <text>{{machine.onlineText}} · {{machine.statusText}}</text>
         </view>
       </view>
     </view>
@@ -41,6 +43,8 @@
       <text>客服</text>
     </view>
   </view>
+
+  <view wx:if="{{takeoverWaiting}}" class="takeover-status">{{takeoverStatusUnavailable || machine.onlineStatus === 'offline' ? '暂未获取到设备状态，请检查连接或联系场地客服' : machine.status === 'stopped' ? '设备异常停机，请联系场地客服' : '上一单正在结束，设备待机后可继续结算'}}</view>
 
   <view class="timing-section">
     <button class="timing-header" hover-class="section-hover" bindtap="toggleRules">
@@ -82,52 +86,65 @@
   <scroll-view class="settlement-section" scroll-y enhanced show-scrollbar="{{false}}">
     <view class="settlement-content">
     <view class="section-title">选择结算方式</view>
+    <button wx:if="{{!reviewMode && hasFreeWashActivities}}" class="free-wash-entry" bindtap="openFreeWashActivities">场地免费洗车券 ›</button>
+    <view wx:if="{{freeWashPreparationError}}" class="group-buy-error" bindtap="retryFreeWashPreparation">{{freeWashPreparationError}}</view>
+    <view wx:elif="{{freeWashUnavailable}}" class="group-buy-error">本次没有可用的活动券，请检查卡券或自行选择其他结算方式。</view>
+    <view wx:if="{{purchasePromptPreview || (!reviewMode && checkoutReady && couponMethod && !paymentSitesLoading && couponMethod.usableCount === 0 && !washCards.length)}}" class="first-purchase-prompt">
+      <view class="first-purchase-copy"><text class="first-purchase-title">先选购洗车套餐</text><text class="first-purchase-desc">购买后返回此页，选择卡券开始洗车</text></view>
+      <button class="first-purchase-button" bindtap="buyCardsFromAssets">去购买洗车卡</button>
+    </view>
     <view class="settlement-list">
       <view
-        class="settlement-row coupon-row {{payMethods[0].active ? 'active' : ''}}"
+        wx:if="{{couponMethod}}"
+        class="settlement-row coupon-row {{couponMethod.active ? 'active' : ''}}"
         bindtap="choosePayMethod"
         data-key="coupon_pack"
         hover-class="settlement-hover"
         aria-role="button"
-        aria-label="选择洗车券结算"
+        aria-label="选择洗车卡或洗车券结算"
       >
         <view class="method-icon coupon-icon-wrap">
           <image src="/assets/icons/lucide-ticket-blue.svg" mode="aspectFit"></image>
         </view>
         <view class="method-copy">
           <view class="method-title-line">
-            <view class="method-title">洗车券</view>
-            <view wx:if="{{payMethods[0].badge}}" class="method-badge {{payMethods[0].active ? 'selected' : ''}}">{{payMethods[0].badge}}</view>
+            <view class="method-title">卡券</view>
+            <view wx:if="{{couponMethod.badge}}" class="method-badge {{couponMethod.active ? 'selected' : ''}}">{{couponMethod.badge}}</view>
           </view>
-          <view class="method-subtitle">{{payMethods[0].desc}}</view>
+          <view class="method-subtitle">{{couponMethod.desc}}</view>
         </view>
         <view class="method-trailing">
-          <image class="method-chevron" src="/assets/icons/lucide-chevron-right-gray.svg" mode="aspectFit"></image>
-          <view class="method-radio"><view class="radio-core"></view></view>
+          <button wx:if="{{!reviewMode && !paymentSitesLoading && couponMethod.usableCount === 0}}" class="inline-buy-assets" catchtap="buyCardsFromAssets">购买卡券</button>
+          <block wx:else><image class="method-chevron" src="/assets/icons/lucide-chevron-right-gray.svg" mode="aspectFit"></image><view class="method-radio"><view class="radio-core"></view></view></block>
         </view>
       </view>
 
-      <view class="settlement-row wallet-row {{payMethods[1].active ? 'active' : ''}}">
-        <button class="recharge-label" hover-class="recharge-hover" catchtap="rechargeWallet">充值</button>
-        <button
+      <view wx:if="{{siteCreditRefreshPending}}">
+        <text>储值已到账，余额待刷新，请勿重复核销。</text>
+        <button size="mini" bindtap="refreshSiteCredit" disabled="{{paymentSitesLoading}}">刷新余额</button>
+      </view>
+      <view wx:if="{{walletMethod}}" class="settlement-row wallet-row {{walletMethod.active ? 'active' : ''}}">
+        <view
           class="wallet-select"
           bindtap="choosePayMethod"
           data-key="wallet"
           hover-class="settlement-hover"
+          role="button"
+          aria-label="选择余额支付"
         >
           <view class="method-icon wallet-icon-wrap">
             <image src="/assets/icons/lucide-wallet-orange.svg" mode="aspectFit"></image>
           </view>
           <view class="method-copy">
-            <view class="method-title">{{reviewMode ? '体验余额支付' : '余额支付'}}</view>
-            <view class="method-subtitle">{{reviewMode ? '虚拟余额' : '余额'}}{{walletBalanceText}}元</view>
+            <view class="method-title">{{reviewMode ? '体验余额支付' : '储值'}}</view>
+            <view class="method-subtitle">{{walletMethod.desc}}</view>
             <view class="wallet-pricing">{{machine.balanceRate}}</view>
           </view>
           <view class="method-radio"><view class="radio-core"></view></view>
-        </button>
+        </view>
       </view>
     </view>
-    <view wx:if="{{groupBuyEntries.length}}" class="group-buy-actions">
+    <view wx:if="{{groupBuyEntries.length}}" class="group-buy-actions {{groupBuyEntries.length === 1 ? 'single-platform' : ''}}">
       <button wx:for="{{groupBuyEntries}}" wx:key="platform" class="group-buy-btn platform-{{item.platform}} {{item.redeemed ? 'redeemed' : ''}}" data-platform="{{item.platform}}" bindtap="openGroupBuy" hover-class="group-buy-hover">
         <image class="platform-logo" src="{{item.platform === 'meituan' ? '/assets/icons/brand-meituan.png' : '/assets/icons/brand-douyin.png'}}" mode="aspectFit"></image>
         <view class="platform-divider"></view>
@@ -138,20 +155,22 @@
       </button>
     </view>
     <view wx:if="{{groupBuyError}}" class="group-buy-error" bindtap="loadGroupBuyEntries">团购入口加载失败，点击重试</view>
+    <view wx:if="{{!reviewMode && !checkoutReady && !paymentSitesLoading}}" class="group-buy-error" bindtap="loadConfirmData">结算方式加载失败，点击重试</view>
+    <view wx:if="{{!reviewMode && checkoutReady && !payMethods.length && !hasGroupBuyEntries}}" class="group-buy-error">该场地暂未开放可用结算方式</view>
     </view>
   </scroll-view>
 
   <view class="fixed-action">
     <view class="action-hint">
       <image src="/assets/icons/lucide-shield-check-blue.svg" mode="aspectFit"></image>
-      <text>确认设备与结算方式后即可启动</text>
+      <text>{{selectedPayment.sourceType === 'free_wash_activity' ? '已选活动券，可免费洗车 ' + selectedPayment.minutes + ' 分钟' : '确认设备与结算方式后即可启动'}}</text>
     </view>
-    <button class="start-btn" loading="{{starting}}" bindtap="startWash">开始洗车</button>
+    <button class="start-btn" disabled="{{!reviewMode && (takeoverWaiting || takeoverPending || (!scanInfo.machine.takeoverOrderId && (paymentSitesLoading || !checkoutReady || (!payMethods.length && !hasGroupBuyEntries))))}}" loading="{{starting || takeoverPending}}" bindtap="startWash">{{!scanInfo.machine.takeoverOrderId && selectedPayment.sourceType === 'free_wash_activity' ? '开始免费洗车' : '开始洗车'}}</button>
   </view>
 
   <view wx:if="{{assetPanelVisible}}" class="asset-mask" bindtap="closeAssetPanel" catchtouchmove="noop">
-    <view class="asset-panel" catchtap="noop">
-      <view class="asset-drag-handle"></view>
+    <view class="asset-panel {{assetSheetDragging ? 'is-dragging' : ''}}" style="transform: translateY({{assetSheetOffset}}px);" catchtap="noop">
+      <view class="asset-drag-area" catchtouchstart="onAssetDragStart" catchtouchmove="onAssetDragMove" catchtouchend="onAssetDragEnd" catchtouchcancel="onAssetDragCancel"><view class="asset-drag-handle"></view></view>
       <view class="asset-header">
         <view class="asset-heading">
           <view class="asset-title">{{assetPanelTitle}}</view>
@@ -163,13 +182,15 @@
       </view>
 
       <scroll-view class="asset-body" scroll-y enhanced show-scrollbar="{{false}}">
-        <block wx:if="{{assetPanelType === 'coupon_pack'}}">
-          <view wx:if="{{monthlyCards.length}}" class="asset-group-title first-group-title">
+        <block wx:if="{{assetPanelType === 'coupon_pack' || assetPanelType === 'stored_value'}}">
+          <button wx:if="{{assetPanelType === 'stored_value' && reviewMode}}" class="asset-card" bindtap="chooseWalletBalance"><view class="asset-card-main"><view class="asset-card-name">体验余额</view><view class="asset-card-desc">{{walletBalanceText}}元</view></view></button>
+          <view wx:if="{{assetPanelType === 'coupon_pack' && monthlyCards.length}}" class="asset-group-title first-group-title">
             <view class="group-name"><text>包月会员</text><text class="group-count">{{monthlyCards.length}}</text></view>
             <text class="group-rule">按分钟扣减</text>
           </view>
           <button
             wx:for="{{monthlyCards}}"
+            wx:if="{{assetPanelType === 'coupon_pack'}}"
             wx:key="cardId"
             class="asset-card member-card-option {{item.canUse ? '' : 'disabled'}}"
             hover-class="asset-card-hover"
@@ -186,12 +207,13 @@
             <view class="asset-select"><view class="asset-select-core"></view></view>
           </button>
 
-          <view wx:if="{{washCards.length}}" class="asset-group-title">
+          <view wx:if="{{assetPanelType === 'stored_value' && washCards.length}}" class="asset-group-title">
             <view class="group-name"><text>洗车卡</text><text class="group-count">{{washCards.length}}</text></view>
             <text class="group-rule">按时间计费</text>
           </view>
           <button
             wx:for="{{washCards}}"
+            wx:if="{{assetPanelType === 'stored_value'}}"
             wx:key="cardId"
             class="asset-card wash-card-option {{item.canUse ? '' : 'disabled'}}"
             hover-class="asset-card-hover"
@@ -208,12 +230,13 @@
             <view class="asset-select"><view class="asset-select-core"></view></view>
           </button>
 
-          <view wx:if="{{singleCards.length || coupons.length}}" class="asset-group-title">
-            <view class="group-name"><text>10分钟一次卡</text><text class="group-count">{{singleCards.length + coupons.length}}</text></view>
+          <view wx:if="{{assetPanelType === 'coupon_pack' && (singleCards.length || coupons.length)}}" class="asset-group-title">
+            <view class="group-name"><text>次卡 / 洗车券</text><text class="group-count">{{singleCards.length + coupons.length}}</text></view>
             <text class="group-rule">每次使用一张</text>
           </view>
           <button
             wx:for="{{singleCards}}"
+            wx:if="{{assetPanelType === 'coupon_pack'}}"
             wx:key="cardId"
             class="asset-card single-card-option {{item.canUse ? '' : 'disabled'}}"
             hover-class="asset-card-hover"
@@ -224,13 +247,14 @@
             <view class="asset-type-mark single-mark"><image src="/assets/icons/lucide-ticket-blue.svg" mode="aspectFit"></image></view>
             <view class="asset-card-main">
               <view class="asset-card-name">{{item.name}}</view>
-              <view class="asset-card-desc">免费洗车10分钟 · {{item.desc}}</view>
+              <view class="asset-card-desc">{{item.desc}}</view>
               <view class="asset-card-time">{{item.canUse ? item.expireText : item.unavailableReason}}</view>
             </view>
             <view class="asset-select"><view class="asset-select-core"></view></view>
           </button>
           <button
             wx:for="{{coupons}}"
+            wx:if="{{assetPanelType === 'coupon_pack'}}"
             wx:key="couponId"
             class="asset-card single-card-option {{item.canUse ? '' : 'disabled'}}"
             hover-class="asset-card-hover"
@@ -247,12 +271,13 @@
             <view class="asset-select"><view class="asset-select-core"></view></view>
           </button>
 
-          <view wx:if="{{!coupons.length && !washCards.length && !monthlyCards.length && !singleCards.length}}" class="empty-assets">
+          <view wx:if="{{assetPanelType === 'coupon_pack' && !coupons.length && !monthlyCards.length && !singleCards.length}}" class="empty-assets">
             <image src="/assets/icons/lucide-ticket-blue.svg" mode="aspectFit"></image>
             <text>暂无可用卡券</text>
           </view>
         </block>
       </scroll-view>
+      <view wx:if="{{!reviewMode}}" class="asset-purchase-footer"><button class="asset-buy-card" bindtap="buyCardsFromAssets">购买洗车卡</button></view>
     </view>
   </view>
 </view>

@@ -1,0 +1,30 @@
+<view class="claim-page">
+  <block wx:if="{{activity}}">
+    <view class="coupon-ticket">
+      <image class="ticket-icon" src="/assets/icons/lucide-ticket-blue.png" mode="aspectFit" />
+      <text class="ticket-site">{{activity.siteName}}</text>
+      <text class="ticket-title">{{activity.couponName}}</text>
+      <text wx:if="{{activity.couponCount}}" class="ticket-count">共 {{activity.couponCount}} 张</text>
+    </view>
+    <view class="claim-details">
+      <view class="claim-row"><text>使用场地</text><text>{{activity.siteName}}</text></view>
+      <view wx:if="{{activity.audience}}" class="claim-row"><text>领取对象</text><text>{{activity.audience}}</text></view>
+      <view wx:if="{{validUntil || activity.validity}}" class="claim-row"><text>券有效期</text><text>{{validUntil ? '至 ' + validUntil : '领取后 ' + activity.validity}}</text></view>
+      <view wx:if="{{activity.expiresAt}}" class="claim-row"><text>活动截止</text><text>{{activity.expiresAt}}</text></view>
+    </view>
+    <view wx:if="{{claimed}}" class="claim-success">
+      <text>{{alreadyClaimed ? '您已领取过本活动的洗车券' : '领取成功，洗车券已到账'}}</text>
+      <text>请在活动场地扫码洗车，结算时选择可用卡券。</text>
+    </view>
+    <view wx:elif="{{statusText}}" class="claim-message">{{statusText}}</view>
+    <view wx:if="{{error}}" class="claim-message">{{error}}</view>
+    <button wx:if="{{claimed}}" class="claim-button" bindtap="startScan" hover-class="claim-pressed">扫码洗车</button>
+    <button wx:elif="{{canClaim}}" class="claim-button" loading="{{busy}}" disabled="{{busy || phoneAuthVisible}}" bindtap="claim" hover-class="claim-pressed">立即领取</button>
+  </block>
+  <view wx:else class="claim-empty">
+    <text>{{loading ? '正在读取活动' : error}}</text>
+    <button wx:if="{{!loading}}" class="claim-button" bindtap="loadActivity">重新查询</button>
+  </view>
+</view>
+<phone-auth visible="{{phoneAuthVisible}}" desc="完成手机号快捷登录后即可领取洗车券。" bindsuccess="onPhoneAuthSuccess" bindcancel="onPhoneAuthCancel" />
+<maintenance-notice />

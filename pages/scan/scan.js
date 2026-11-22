@@ -2,7 +2,7 @@ const api = require('../../utils/api')
 const { ensurePhoneBound } = require('../../utils/auth')
 const { hasStoredSession } = require('../../utils/request')
 const { STORAGE_KEYS } = require('../../utils/config')
-const { getCurrentLocation } = require('../../utils/location')
+const { getWashLocation } = require('../../utils/location')
 const { parseMachineMid, parsePromotionCode } = require('../../utils/format')
 const { redirectToOrder } = require('../../utils/wash-route')
 
@@ -261,10 +261,10 @@ Page({
     }
 
     this.setData({ resolving: true })
-    this.setScanStatus('正在获取当前位置')
+    this.setScanStatus('正在识别设备信息')
     wx.showLoading({ title: '识别机器中' })
 
-    getCurrentLocation()
+    getWashLocation()
       .then((location) => {
         this.setScanStatus('正在识别设备信息')
         return api.scan.resolve({ mid, lat: location.latitude, lng: location.longitude })
@@ -326,55 +326,7 @@ Page({
 
   resolvePromotionCode(code) {
     this.setData({ resolving: true })
-    this.setScanStatus('正在读取领券活动')
-    wx.showLoading({ title: '读取领券活动' })
-
-    api.promotions.detail(code)
-      .then((activity) => {
-        this.setScanStatus('活动已识别，等待确认')
-        wx.hideLoading()
-        return new Promise((resolve) => {
-          const couponName = activity.couponName || `${activity.couponMinutes || 0}分钟洗车券`
-          const countText = Number(activity.couponCount || 1) > 1 ? ` × ${activity.couponCount}` : ''
-          wx.showModal({
-            title: activity.siteName || '洗车券领取活动',
-            content: `${couponName}${countText}\n有效期：${activity.validDaysText || `${activity.couponValidDays || 1}天`}`,
-            confirmText: '立即领取',
-            cancelText: '暂不领取',
-            success: (res) => resolve(!!res.confirm),
-            fail: () => resolve(false)
-          })
-        })
-      })
-      .then((confirmed) => {
-        if (!confirmed) {
-          this.restoreScanStatus()
-          return null
-        }
-        this.setScanStatus('正在领取洗车券')
-        wx.showLoading({ title: '正在领取' })
-        return api.promotions.claim(code)
-      })
-      .then((result) => {
-        if (!result) return
-        this.setScanStatus('领取成功', 'success')
-        wx.hideLoading()
-        wx.showModal({
-          title: '领取成功',
-          content: `${result.couponName || '洗车券'}已放入你的账户`,
-          showCancel: false,
-          confirmText: '查看洗车券',
-          success: () => this.redirectAfterScan('/pages/coupons/coupons')
-        })
-      })
-      .catch((err) => {
-        this.setScanStatus('领取失败，请重试', 'error')
-        wx.showToast({ title: err.message || '活动领取失败', icon: 'none' })
-      })
-      .finally(() => {
-        wx.hideLoading()
-        this.setData({ resolving: false })
-      })
+    this.redirectAfterScan(`/pages/promotion-claim/promotion-claim?code=${encodeURIComponent(code)}`)
   },
 
   onPhoneAuthSuccess() {

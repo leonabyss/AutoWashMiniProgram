@@ -1,1 +1,1 @@
-<view wx:if="{{reviewMode}}" class="review-flow-notice">审核体验模式（模拟设备及余额）</view>
+<view wx:if="{{reviewMode}}" class="review-flow-notice">模拟洗车：不启动真实设备，不产生实际扣费</view>

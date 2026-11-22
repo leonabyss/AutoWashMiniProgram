@@ -1,3 +1,4 @@
+<maintenance-notice />
 <view class="message-page">
   <view wx:if="{{!loading && !loadError && messages.length}}" class="message-toolbar">
     <text class="message-toolbar-status">{{unreadCount ? '未读消息 ' + unreadCount + ' 条' : '全部消息已读'}}</text>

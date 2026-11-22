@@ -12,7 +12,7 @@
       bindgetphonenumber="onGetPhoneNumber"
       loading="{{loading}}"
       disabled="{{loading}}"
-    >微信手机号一键登录</button>
+    >手机号快捷登录</button>
     <button class="weui-btn auth-cancel" bindtap="onCancel" disabled="{{loading}}">暂不登录</button>
   </view>
 </view>

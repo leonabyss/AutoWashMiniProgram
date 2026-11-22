@@ -1,13 +1,13 @@
 const api = require('../../utils/api')
-const { hasStoredSession, restoreSession, ensureLogin } = require('../../utils/request')
+const { hasStoredSession, restoreSession, ensureLogin, login } = require('../../utils/request')
 const { registerOrder } = require('../../utils/review-mode')
 const { ensurePhoneBound } = require('../../utils/auth')
 const { API_BASE_URL, STORAGE_KEYS } = require('../../utils/config')
 const { centToYuan, secToText, makeClientRequestId } = require('../../utils/format')
 const { getOrderNo, getResumeTarget } = require('../../utils/wash-route')
 
-const HOME_MACHINE_STATUS_INTERVAL = 5000
-const HOME_RESUME_REFRESH_INTERVAL = 5000
+const HOME_MACHINE_STATUS_INTERVAL = 3000
+const HOME_RESUME_REFRESH_INTERVAL = 3000
 const HOME_ACCOUNT_REFRESH_INTERVAL = 15000
 const HOME_MESSAGE_REFRESH_INTERVAL = 15000
 const defaultShareInfo = {
@@ -241,8 +241,8 @@ function buildAccountSummary(profile, wallet, cards, coupons) {
 function normalizeMachineStatus(status) {
   if (!status) {
     return {
-      statusText: '维护',
-      statusClass: 'maintenance'
+      statusText: '待确认',
+      statusClass: 'unknown'
     }
   }
 
@@ -442,9 +442,12 @@ function normalizeCardPromoText(homeCms) {
 
 function normalizeCmsPagePath(path) {
   const value = String(path || '')
+  if (/^\/?pages\/buy-card\/buy-card(?:\?|$)/.test(value)) {
+    return value.replace(/^\/?pages\/buy-card\/buy-card/, '/pages/buy-card-new/buy-card-new')
+  }
 
   if (value === '/pages/sites/index' || value === 'pages/sites/index') return '/pages/map/map'
-  if (value === '/pages/member/cards/index' || value === 'pages/member/cards/index') return '/pages/buy-card/buy-card'
+  if (value === '/pages/member/cards/index' || value === 'pages/member/cards/index') return '/pages/buy-card-new/buy-card-new'
   if (value.indexOf('/') === 0) return value
   if (value.indexOf('pages/') === 0) return `/${value}`
 
@@ -603,6 +606,7 @@ function createHomePage(overrides) {
 
     if (this.data.isLoggedIn) {
       this.startHomeRefreshTimers(true)
+      this.refreshLastWashRecord()
     } else if (!this.data.loading) {
       this.loadHomeData()
     }
@@ -794,6 +798,10 @@ function createHomePage(overrides) {
         api.wash.list({ page: 0, size: 1 }).catch(() => null)
       ]))
       .then(([profile, wallet, resumeResult, memberCards, temporaryCards, coupons, washOrders]) => {
+        if (!hasStoredSession()) {
+          this.showLoggedOutState()
+          return null
+        }
         const cards = (memberCards || []).concat(temporaryCards || [])
         const nextUser = Object.assign({}, this.data.user)
 
@@ -811,7 +819,7 @@ function createHomePage(overrides) {
         const accountMetrics = buildAccountMetrics(profile, wallet, cards, coupons)
         const lastOrder = (washOrders && washOrders.items && washOrders.items[0]) || null
 
-        const isLoggedIn = !!(profile && profile.phone) || !!(this.data.review && this.data.review.reviewMode)
+        const isLoggedIn = !!(profile && profile.phone) || this.data.isLoggedIn || !!(this.data.review && this.data.review.reviewMode)
         const resumableOrder = isLoggedIn ? normalizeResumeOrder(resumeResult) : null
 
         this.setData({
@@ -846,7 +854,7 @@ function createHomePage(overrides) {
         return this.loadLastWash(lastOrder)
       })
       .catch((err) => {
-        this.showLoggedOutState()
+        if (!hasStoredSession() || err.code === 'AUTH_REQUIRED' || err.code === 'UNAUTHORIZED') this.showLoggedOutState()
 
         if (err.code !== 'AUTH_REQUIRED') {
           wx.showToast({
@@ -890,10 +898,21 @@ function createHomePage(overrides) {
     })
   },
 
+  refreshLastWashRecord() {
+    if (this.lastWashRefreshing) return
+    this.lastWashRefreshing = true
+    return api.wash.list({ page: 0, size: 1 }).then((result) => {
+      if (!hasStoredSession() || !this.data.isLoggedIn) return
+      const order = result && result.items && result.items[0]
+      if (order) return this.loadLastWash(order)
+    }).catch(() => {}).finally(() => { this.lastWashRefreshing = false })
+  },
+
   loadLastWash(order) {
     return api.wash.detail(order.orderNo)
       .catch(() => order)
       .then((detail) => {
+        if (!hasStoredSession() || !this.data.isLoggedIn) return null
         const siteName = detail.siteName || order.siteName || '未知场地'
         const machineName = detail.machineName || order.machineName || '未知机器'
         const machineId = detail.machineId || order.machineId
@@ -904,13 +923,14 @@ function createHomePage(overrides) {
               siteName,
               machineName,
               machineId: null
-            }, normalizeMachineStatus(hasMachineStatusSnapshot(detail) ? detail : null))
+            }, normalizeMachineStatus(null))
           })
           return null
         }
 
         return api.machines.status(machineId)
           .then((machineStatus) => {
+            if (!hasStoredSession() || !this.data.isLoggedIn) return
             this.setData({
               lastWash: Object.assign({
                 siteName,
@@ -920,12 +940,13 @@ function createHomePage(overrides) {
             })
           })
           .catch(() => {
+            if (!hasStoredSession() || !this.data.isLoggedIn) return
             this.setData({
               lastWash: Object.assign({
                 siteName,
                 machineName,
                 machineId
-              }, normalizeMachineStatus(hasMachineStatusSnapshot(detail) ? detail : null))
+              }, normalizeMachineStatus(null))
             })
           })
       })
@@ -1216,7 +1237,12 @@ function createHomePage(overrides) {
           'lastWash.statusClass': normalized.statusClass
         })
       })
-      .catch(() => {})
+      .catch(() => {
+        const current = this.data.lastWash
+        if (current && String(current.machineId) === String(machineId)) {
+          this.setData({ 'lastWash.statusText': '待确认', 'lastWash.statusClass': 'unknown' })
+        }
+      })
       .finally(() => {
         this.machineStatusRefreshing = false
       })
@@ -1226,13 +1252,14 @@ function createHomePage(overrides) {
     if (!this.data.isLoggedIn || this.accountRefreshing) return
 
     this.accountRefreshing = true
-    Promise.all([
-      api.wallet.get().catch(() => null),
-      api.member.cards().catch(() => []),
-      api.member.temporaryCards({ activeOnly: true }).catch(() => []),
-      api.coupons.mine({ status: 'available', page: 0, size: 1 }).catch(() => null)
+    return Promise.all([
+      api.wallet.get(),
+      api.member.cards(),
+      api.member.temporaryCards({ activeOnly: true }),
+      api.coupons.mine({ status: 'available', page: 0, size: 1 })
     ])
       .then(([wallet, memberCards, temporaryCards, coupons]) => {
+        if (!hasStoredSession() || !this.data.isLoggedIn) return
         const cards = (memberCards || []).concat(temporaryCards || [])
         const profile = this.data.user
         const nextUser = Object.assign({}, this.data.user)
@@ -1249,7 +1276,9 @@ function createHomePage(overrides) {
           crownState: getCrownState(cards)
         })
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!hasStoredSession()) this.showLoggedOutState()
+      })
       .finally(() => {
         this.accountRefreshing = false
       })
@@ -1311,7 +1340,18 @@ function createHomePage(overrides) {
 
       wx.navigateTo({
         url: pagePath,
-        fail: () => {}
+        fail: () => {
+          if (pagePath.split('?')[0] === '/pages/franchise/franchise') {
+            wx.showModal({
+              title: '暂时无法打开加盟页面',
+              content: '请更新小程序后重试，或联系客服咨询加盟。',
+              confirmText: '联系客服',
+              success: (result) => {
+                if (result.confirm) wx.navigateTo({ url: '/pages/customer-service/customer-service' })
+              }
+            })
+          } else wx.showToast({ title: '页面暂时无法打开，请稍后重试', icon: 'none' })
+        }
       })
       return
     }
@@ -1393,7 +1433,7 @@ function createHomePage(overrides) {
   openReview() {
     if (this.data.review && this.data.review.reviewMode) {
       wx.showModal({
-        title: '退出审核体验',
+        title: this.data.review.developerMode ? '退出开发测试' : '退出审核体验',
         content: '退出会结算当前模拟订单，恢复正式洗车流程。虚拟体验余额不会转入真实钱包。',
         confirmText: '退出体验',
         success: (res) => {
@@ -1413,7 +1453,7 @@ function createHomePage(overrides) {
     if (!this.data.review || this.data.review.enabled !== true) return
     wx.showModal({
       title: '审核体验码',
-      content: '正常微信登录后，使用虚拟余额和模拟设备体验现有洗车流程，不收取真实费用。',
+      content: '登录后，使用虚拟余额和模拟设备体验现有洗车流程，不收取真实费用。',
       editable: true,
       placeholderText: '请输入审核体验码',
       confirmText: '领取体验',
@@ -1422,7 +1462,7 @@ function createHomePage(overrides) {
         const code = String(res.content || '').trim()
         if (!code) { wx.showToast({ title: '请输入体验码', icon: 'none' }); return }
         wx.showLoading({ title: '正在领取' })
-        ensureLogin().then(() => api.review.claim(code)).then(() => this.loadHomeData())
+        (hasStoredSession() ? ensureLogin() : login()).then(() => api.review.claim(code)).then(() => this.loadHomeData())
           .catch((err) => wx.showModal({ title: '领取失败', content: err.message || '请稍后重试', showCancel: false }))
           .finally(() => wx.hideLoading())
       }
@@ -1461,6 +1501,9 @@ function createHomePage(overrides) {
   scanMachine() {
     if (hasStoredSession()) {
       this.refreshReviewStatus().then((status) => {
+        if (status && status.developerAvailable) {
+          return this.openDeveloperWash()
+        }
         if (status && status.reviewMode) {
           if (status.expired || !status.enabled) {
             wx.showModal({ title: '审核体验不可用', content: '体验已过期或已关闭，请点击首页“退出体验”恢复正式流程。', showCancel: false })
@@ -1476,6 +1519,35 @@ function createHomePage(overrides) {
       return
     }
     this.scanRealMachine()
+  },
+
+  async openDeveloperWash() {
+    if (this.openingDeveloperWash) return
+    this.openingDeveloperWash = true
+    wx.showLoading({ title: '进入模拟洗车' })
+    try {
+      const status = await api.review.enterDeveloper()
+      if (status.developerMode !== true || status.simulated !== true || status.autoScan !== true) {
+        throw new Error('当前无法进入开发测试')
+      }
+      this.setData({ review: status, reviewBalance: centToYuan(status.balanceCent) })
+      if (status.currentOrderNo) {
+        await this.refreshReviewStatus()
+        if (this.data.resumableOrder) {
+          this.enterResumeOrder(this.data.resumableOrder)
+          return
+        }
+      }
+      const resolved = await api.review.scan()
+      if (!resolved.scanSuccess || !resolved.simulated || !resolved.reviewMode) throw new Error('模拟设备未就绪')
+      wx.setStorageSync('reviewScanInfo', resolved)
+      await new Promise((resolve, reject) => wx.navigateTo({
+        url: '/pages/wash-confirm/wash-confirm?review=1', success: resolve, fail: reject
+      }))
+    } finally {
+      wx.hideLoading()
+      this.openingDeveloperWash = false
+    }
   },
 
   scanRealMachine() {
@@ -1567,7 +1639,7 @@ function createHomePage(overrides) {
   buyCard() {
     this.requirePhone(() => {
       wx.navigateTo({
-        url: '/pages/buy-card/buy-card'
+        url: '/pages/buy-card-new/buy-card-new'
       })
     })
   }

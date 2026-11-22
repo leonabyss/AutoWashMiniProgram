@@ -71,7 +71,8 @@ function parseMachineMid(scanResult) {
 
 function parsePromotionCode(scanResult) {
   const raw = String(scanResult || '').trim()
-  const match = raw.match(/\/public\/promotion-codes\/([^/?#]+)/i)
+  const path = raw.split(/[?#]/, 1)[0]
+  const match = path.match(/\/(?:public\/promotion-codes|promotion)\/([^/]+)\/?$/i)
   return match ? normalizeMachineMid(safeDecode(match[1])) : ''
 }
 

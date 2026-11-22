@@ -56,7 +56,7 @@ Page({
       .finally(() => this.setData({ loading: false }))
   },
   recharge() {
-    wx.navigateTo({ url: '/pages/buy-card/buy-card?category=wash-card' })
+    wx.navigateTo({ url: '/pages/buy-card-new/buy-card-new?category=wash-card' })
   },
   retry() { this.loadData() }
 })

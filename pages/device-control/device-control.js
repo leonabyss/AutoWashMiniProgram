@@ -252,7 +252,7 @@ Page({
     this.clearStatusPollTimer()
     this.statusPollTimer = setInterval(() => {
       this.pollRemoteStatus()
-    }, intervalMs || 1000)
+    }, Math.min(3000, Math.max(1000, Number(intervalMs) || 1000)))
   },
 
   clearStatusPollTimer() {

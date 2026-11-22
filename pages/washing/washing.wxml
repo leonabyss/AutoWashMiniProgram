@@ -1,3 +1,4 @@
+<maintenance-notice />
 <view class="washing-page {{washingSizeClass}} {{reviewMode ? 'review-flow-mode' : ''}}" style="{{washingViewportStyle}}">
   <include src="../../components/review-notice/review-notice.wxml" />
   <view wx:if="{{networkNotice}}" class="wash-network-notice" role="alert">{{networkNotice}}</view>

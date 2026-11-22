@@ -14,8 +14,16 @@ function withQuery(url, params) {
 }
 
 const api = {
+  freeWash: {
+    list(siteId) { return request({ url: `/mini/sites/${encodeURIComponent(siteId)}/free-wash-activities`, auth: false }) },
+    claim(activityId, siteId) { return request({ url: `/mini/free-wash-activities/${encodeURIComponent(activityId)}/claim`, method:'POST', data:{siteId} }) },
+    share(activityId, siteId) { return request({ url: `/mini/free-wash-activities/${encodeURIComponent(activityId)}/share`, method:'POST', data:{siteId} }) },
+    entry(shareToken) { return request({ url:'/public/free-wash-share/entry', method:'POST', auth:false, data:{shareToken} }) },
+    accept(entryToken) { return request({ url:'/mini/free-wash-share/accept', method:'POST', data:{entryToken} }) }
+  },
   review: {
     status() { return request({ url: '/mini/review/status' }) },
+    enterDeveloper() { return request({ url: '/mini/review/developer/enter', method: 'POST' }) },
     claim(code) { return request({ url: '/mini/review/claim', method: 'POST', data: { code } }) },
     scan() { return request({ url: '/mini/review/scan/resolve', method: 'POST' }) },
     createOrder() { return request({ url: '/mini/review/wash/orders', method: 'POST' }) },
@@ -114,6 +122,7 @@ const api = {
   },
 
   sites: {
+    checkoutOptions(siteId) { return request({url:`/mini/sites/${siteId}/checkout-options`,auth:false}) },
     nearby(params) {
       return request({ url: withQuery('/mini/sites/nearby', params) })
     },
@@ -153,8 +162,14 @@ const api = {
   },
 
   scan: {
+    policy() {
+      return request({ url: '/mini/scan/policy' })
+    },
     resolve(data) {
       return request({ url: '/mini/scan/resolve', method: 'POST', data })
+    },
+    takeover(data) {
+      return request({ url: '/mini/scan/takeover', method: 'POST', data })
     }
   },
 

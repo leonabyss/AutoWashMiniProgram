@@ -3,6 +3,7 @@ const { IMAGE_BASE_URL, STORAGE_KEYS } = require('../../utils/config')
 const { centToYuan, secToText, makeClientRequestId } = require('../../utils/format')
 const { redirectToOrder } = require('../../utils/wash-route')
 const { isReviewOrder } = require('../../utils/review-mode')
+const { backendWorkSeconds } = require('../../utils/wash-duration')
 
 const guestSummary = {
   icon: 'M',
@@ -198,33 +199,34 @@ Page({
     }
 
     this.setData({ orderNo, reviewMode: isReviewOrder(orderNo) })
-    this.startNetworkWatch()
-    this.updateWashingViewport()
-    this.keepScreenOn(true)
     this.loadAccountSummary()
-    this.pollStatus()
-    this.timer = setInterval(() => {
-      this.pollStatus()
-    }, this.data.reviewMode ? 2000 : 3000)
   },
 
   onShow() {
+    if (!this.data.orderNo || this.washPageVisible) return
+    this.washPageVisible = true
+    this.startNetworkWatch()
     this.updateWashingViewport()
     this.keepScreenOn(true)
     this.pollStatus()
+    this.timer = setInterval(() => this.pollStatus(), this.data.reviewMode ? 2000 : 3000)
   },
 
   onResize() {
     this.updateWashingViewport()
   },
 
-  onUnload() {
+  onHide() {
+    this.washPageVisible = false
     this.stopNetworkWatch()
     if (this.timer) {
       clearInterval(this.timer)
+      this.timer = null
     }
     this.keepScreenOn(false)
   },
+
+  onUnload() { this.onHide() },
 
   keepScreenOn(enabled) {
     wx.setKeepScreenOn({
@@ -268,11 +270,12 @@ Page({
   },
 
   pollStatus() {
-    if (!this.data.orderNo || this.data.networkOffline || this.statusRefreshing) return
+    if (!this.washPageVisible || !this.data.orderNo || this.data.networkOffline || this.statusRefreshing) return
     this.statusRefreshing = true
 
     api.wash.status(this.data.orderNo)
       .then((status) => {
+        if (!this.washPageVisible) return
         this.markNetworkSynced()
         if (this.data.reviewMode) {
           this.setData({ accountSummary: { icon: 'M', prefix: '可用体验余额', value: centToYuan(status.availableBalanceCent), unit: '元' } })
@@ -289,20 +292,14 @@ Page({
           return
         }
 
-        const duration = status.duration || {}
         const machine = status.machine || {}
-        const usedDurationSec = Number(
-          duration.usedDurationSec
-          || duration.machineStartSec
-          || status.usedDurationSec
-          || status.machineStartSec
-          || status.washDurationSec
-          || 0
-        )
+        const usedDurationSec = backendWorkSeconds(status)
 
         this.setData({
-          seconds: usedDurationSec,
-          displayClock: formatClock(usedDurationSec),
+          ...(usedDurationSec === null ? {} : {
+            seconds: usedDurationSec,
+            displayClock: formatClock(usedDurationSec)
+          }),
           machineStatus: machine.machineStatus || status.washStatus || 'running',
           machineStatusText: getMachineStatusText(machine.machineStatus, status.washStatus),
           machineId: machine.machineId || status.machineId || this.data.machineId,
@@ -489,10 +486,12 @@ Page({
 
     return new Promise((resolve, reject) => {
       const tick = () => {
+        if (!this.washPageVisible) { resolve(); return }
         tries += 1
 
         api.wash.status(this.data.orderNo)
           .then((status) => {
+            if (!this.washPageVisible) { resolve(); return }
             if (isTerminalOrderStatus(status)) {
               this.goToFinishPage()
               resolve()
@@ -507,6 +506,7 @@ Page({
             setTimeout(tick, 2000)
           })
           .catch((err) => {
+            if (!this.washPageVisible) { resolve(); return }
             if (tries >= maxTries) {
               reject(err)
               return

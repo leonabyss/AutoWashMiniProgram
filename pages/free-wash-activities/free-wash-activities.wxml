@@ -1,0 +1,25 @@
+<maintenance-notice />
+<view class="activity-page">
+  <view class="activity-heading">{{siteName || '场地活动'}}</view>
+  <view wx:if="{{invited && entryReady}}" class="invite">
+    <text>新用户首次注册可确认邀请，奖励发给邀请人。</text>
+    <button wx:if="{{!accepted}}" class="small-button" disabled="{{!!busy || loading}}" data-kind="accept" bindtap="runAction">确认邀请</button>
+  </view>
+  <view wx:if="{{notice}}" class="notice">{{notice}}</view>
+  <view wx:if="{{error}}" class="error">{{error}} <text wx:if="{{!busy}}" bindtap="load">刷新</text></view>
+  <view wx:if="{{loading}}" class="muted">活动加载中…</view>
+  <view wx:elif="{{!items.length && !error}}" class="muted">该场地暂无可参加的免费洗车活动</view>
+  <view wx:for="{{items}}" wx:key="activityId" class="activity-row">
+    <view class="activity-title">{{item.title}}</view>
+    <text class="muted">{{item.typeText}} · {{item.couponMinutes}} 分钟洗车券 · 领取后 {{item.couponValidDays}} 天有效</text>
+    <text wx:if="{{item.endText}}" class="muted">活动截止 {{item.endText}}</text>
+    <view class="activity-actions">
+      <block wx:if="{{item.activityType === 'SHARE_TO_GET_FREE'}}">
+        <button wx:if="{{shareReady[item.activityId]}}" class="small-button" open-type="share" data-id="{{item.activityId}}">分享给好友</button>
+        <button wx:else class="small-button" disabled="{{!!busy || loading}}" data-kind="share" data-id="{{item.activityId}}" bindtap="runAction">生成邀请</button>
+      </block>
+      <button wx:else class="small-button" disabled="{{!!busy || loading || claimed[item.activityId]}}" data-kind="claim" data-id="{{item.activityId}}" bindtap="runAction">{{claimed[item.activityId] ? '已领取' : '领取洗车券'}}</button>
+    </view>
+  </view>
+</view>
+<phone-auth visible="{{phoneAuthVisible}}" desc="请先完成手机号授权，再参加场地活动。" bindsuccess="onPhoneAuthSuccess" bindcancel="onPhoneAuthCancel" />

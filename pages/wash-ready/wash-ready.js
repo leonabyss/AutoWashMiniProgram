@@ -3,6 +3,7 @@ const { IMAGE_BASE_URL, STORAGE_KEYS } = require('../../utils/config')
 const { makeClientRequestId } = require('../../utils/format')
 const { isWashRunning, redirectToOrder } = require('../../utils/wash-route')
 const { isReviewOrder } = require('../../utils/review-mode')
+const { getWashLocation } = require('../../utils/location')
 
 Page({
   behaviors: [require('../../utils/wash-network')],
@@ -11,6 +12,8 @@ Page({
     reviewMode: false,
     statusText: '等待机器启动确认',
     remoteStarting: false,
+    retryDouyin: false,
+    retryingDouyin: false,
     controlPanelImageUrl: `${IMAGE_BASE_URL}/wash-ready-control-panel.png`
   },
 
@@ -56,7 +59,8 @@ Page({
         const routeOrder = Object.assign({ orderNo: this.data.orderNo }, status || {})
 
         this.setData({
-          statusText: this.statusText(washStatus)
+          statusText: this.statusText(washStatus),
+          retryDouyin: !!(status.device && status.device.canRetryDouyinStart)
         })
 
         if (isWashRunning(washStatus) || washStatus === 'stopping' || washStatus === 'finished') {
@@ -82,6 +86,7 @@ Page({
       created: '等待机器启动确认',
       paid: '等待机器启动确认',
       starting: '启动中',
+      awaiting_start: '抖音已核销，等待启动',
       running: '机器已启动',
       runing: '机器已启动',
       stopping: '停止中',
@@ -90,6 +95,19 @@ Page({
     }
 
     return map[washStatus] || '拿起水枪 开始洗车'
+  },
+
+  async retryDouyinStart() {
+    if (!this.data.retryDouyin || this.data.retryingDouyin || !this.canSendWashCommand()) return
+    this.setData({ retryingDouyin: true })
+    try {
+      const location = await getWashLocation()
+      await api.wash.start(this.data.orderNo, { lat: location.latitude, lng: location.longitude,
+        clientRequestId: makeClientRequestId('douyin-retry') })
+      this.pollStatus()
+    } catch (err) {
+      wx.showToast({ title: err.message || '原订单仍待启动，请稍后重试', icon: 'none' })
+    } finally { this.setData({ retryingDouyin: false }) }
   },
 
   openRemoteControl() {

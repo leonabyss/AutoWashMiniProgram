@@ -1,6 +1,6 @@
 const api = require('./api')
 const { STORAGE_KEYS } = require('./config')
-const { ensureLogin, hasStoredSession } = require('./request')
+const { ensureLogin, hasStoredSession, login } = require('./request')
 
 function isPhoneBound(user) {
   return !!(user && user.phone)
@@ -55,6 +55,9 @@ function ensurePhoneBound() {
             throw createPhoneRequiredError()
           })
         })
+    }).catch((err) => {
+      if (err.code === 'AUTH_REQUIRED' || err.code === 'UNAUTHORIZED') throw createPhoneRequiredError()
+      throw err
     })
 }
 
@@ -63,7 +66,7 @@ function bindPhoneWithCode(code) {
     return Promise.reject(createPhoneRequiredError())
   }
 
-  return ensureLogin()
+  return (hasStoredSession() ? ensureLogin() : login())
     .then(() => api.users.bindPhone({ code }))
     .then((result) => updateStoredUser(normalizeBindPhoneResult(result)))
 }

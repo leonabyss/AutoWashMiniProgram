@@ -1,0 +1,50 @@
+<maintenance-notice />
+<view class="catalog-page {{reviewMode ? 'review-flow-mode' : ''}}">
+  <include src="../../components/review-notice/review-notice.wxml" />
+  <button class="catalog-site" bindtap="openSiteSelector" disabled="{{payingId || paymentSitesLoading}}">
+    <image class="site-icon" src="/assets/icons/lucide-map-pin-blue.svg" mode="aspectFit" />
+    <view class="site-text"><text class="site-caption">办卡场地</text><text class="site-name">{{siteTitle}}</text></view>
+    <text class="site-change">切换</text><image class="chevron" src="/assets/icons/lucide-chevron-right-dark.png" mode="aspectFit" />
+  </button>
+  <view wx:if="{{loading}}" class="catalog-loading">正在获取场地套餐…</view>
+  <view wx:elif="{{productError}}" class="catalog-empty"><text>{{productError}}</text><button class="catalog-retry" bindtap="retryProducts">重新加载</button></view>
+  <view wx:elif="{{!selectedPaymentSite}}" class="catalog-empty">请选择办卡场地</view>
+  <block wx:else>
+    <view wx:for="{{sections}}" wx:key="key" class="catalog-section">
+      <view class="catalog-heading">
+        <image class="heading-icon" src="/assets/icons/{{item.icon}}" mode="aspectFit" />
+        <text class="heading-title">{{item.title}}</text>
+        <view class="heading-rule"><text wx:for="{{item.ruleParts}}" wx:for-item="part" wx:key="index" class="{{part.emphasis ? 'rule-emphasis' : ''}}">{{part.text}}</text></view>
+      </view>
+      <view wx:if="{{item.products.length}}" class="catalog-grid columns-{{item.columns}}">
+        <button wx:for="{{item.products}}" wx:for-item="product" wx:for-index="productIndex" wx:key="payKey" class="catalog-product {{item.splitLastRow && productIndex >= item.products.length - 2 ? 'wide-product' : ''}} {{selectedProduct.payKey === product.payKey ? 'selected' : ''}}" data-key="{{product.payKey}}" bindtap="selectProduct" disabled="{{product.unavailable || payingId}}">
+          <image wx:if="{{product.badgeImageUrl}}" class="product-badge-image" src="{{product.badgeImageUrl}}" mode="heightFix" />
+          <text wx:elif="{{product.badgeText}}" class="product-badge">{{product.badgeText}}</text>
+          <text class="product-name">{{product.name || '商品信息待完善'}}</text>
+          <view class="product-price"><text class="price-symbol">¥</text>{{product.displayPrice}}</view>
+          <text wx:for="{{product.detailLines}}" wx:for-item="line" wx:key="*this" class="product-detail">{{line}}</text>
+          <image wx:if="{{selectedProduct.payKey === product.payKey}}" class="selection-check" src="/assets/icons/lucide-circle-check-blue.png" mode="aspectFit" />
+        </button>
+      </view>
+      <view wx:else class="section-empty">该场地暂无此类套餐</view>
+    </view>
+    <view class="catalog-rules-section">
+      <button class="details-toggle" bindtap="toggleDetails" aria-expanded="{{rulesExpanded}}" aria-label="{{rulesExpanded ? '收起相关细则' : '展开相关细则'}}">
+        <text>相关细则</text><view class="details-toggle-action"><text class="details-toggle-hint">{{rulesExpanded ? '收起细则' : '展开查看'}}</text><image class="details-arrow {{rulesExpanded ? 'expanded' : ''}}" src="/assets/icons/lucide-chevron-down.svg" mode="aspectFit" /></view>
+      </button>
+      <view wx:if="{{rulesExpanded}}" class="details-body">
+        <view class="details-paragraph">1. 在该场地办理的卡仅限相关场地内使用，是否可在其他场地使用，请以具体场地信息为准。重复购买多张卡，余额将叠加，有效期将顺延。使用时按所在洗车店的洗车价格结算。</view>
+        <view class="details-paragraph">2. 洗车券限于购买洗车卡所在的洗车点内使用（部分存在同一经营方旗下多个洗车点通用的情况，以实际购买订单展示为准），每次洗车消费1张券。</view>
+        <view class="details-paragraph">3. 有效期规则：1个月按30天计算，1季=3个月=90天，12个月=1年=360天。请在有效期内及时使用洗车卡和洗车券。</view>
+        <view class="details-paragraph">4. 购买或续费成功后，相应费用不予退还。</view>
+        <view class="details-paragraph">5. 有关所有商品的使用规则，北京睿威智能科技有限公司保留最终解释权。</view>
+      </view>
+    </view>
+  </block>
+  <view class="catalog-footer">
+    <view class="footer-summary"><text class="footer-caption">{{selectedProduct ? '已选 ' + selectedProduct.name : '请选择套餐'}}</text><text wx:if="{{selectedProduct}}" class="footer-price">¥{{selectedProduct.displayPrice}}</text></view>
+    <button class="catalog-confirm" disabled="{{!selectedProduct || loading || payingId}}" bindtap="confirmPurchase">{{reviewMode ? '确认模拟购买' : '确认购买'}}</button>
+  </view>
+  <include src="../buy-card/site-selector.wxml" />
+  <phone-auth visible="{{phoneAuthVisible}}" title="手机号快捷登录" desc="登录后查看当前场地的可购套餐及权益。" bindsuccess="onPhoneAuthSuccess" bindcancel="onPhoneAuthCancel" />
+</view>

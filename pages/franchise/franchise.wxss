@@ -1,0 +1,19 @@
+page { background: #f6f8fc; }
+.franchise-page { min-height: 100vh; max-width: 620px; margin: auto; padding: 0 32rpx calc(40rpx + env(safe-area-inset-bottom)); color: #172033; }
+.franchise-heading { display: flex; align-items: center; gap: 20rpx; padding: 36rpx 0 24rpx; }
+.franchise-heading image { width: 72rpx; height: 72rpx; flex: none; padding: 12rpx; border-radius: 12rpx; background: #eaf2ff; }
+.franchise-brand { color: #627086; font-size: 24rpx; }
+.franchise-title { font-size: 36rpx; line-height: 1.4; font-weight: 600; }
+.franchise-section { padding: 24rpx; margin-bottom: 20rpx; background: #fff; border: 1rpx solid #e1e8f3; border-radius: 16rpx; }
+.franchise-section-title { font-weight: 600; font-size: 28rpx; margin-bottom: 16rpx; }
+.franchise-section label, .franchise-field { display: block; font-size: 26rpx; margin-top: 20rpx; }
+.franchise-section input, .franchise-section textarea, .franchise-picker { display: block; width: 100%; box-sizing: border-box; background: #f6f8fc; border: 1rpx solid #e1e8f3; border-radius: 8rpx; padding: 14rpx 18rpx; margin-top: 8rpx; min-height: 80rpx; font-size: 28rpx; line-height: 1.5; }
+.franchise-section textarea { height: 150rpx; }
+.franchise-picker { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
+.franchise-picker text { flex: none; color: #627086; }
+.franchise-consent { display: flex; align-items: center; gap: 12rpx; margin: 24rpx 0; color: #42536e; font-size: 24rpx; line-height: 1.5; }
+.franchise-consent checkbox { flex: none; }
+.franchise-page .franchise-submit { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 96rpx; padding: 18rpx 24rpx; margin-top: 24rpx; border-radius: 14rpx; background: #1262e8; color: #fff; font-size: 30rpx; font-weight: 600; }
+.franchise-page .franchise-submit[disabled] { background: #dce7fa; color: #657c9f; }
+.franchise-error { color: #a63130; font-size: 24rpx; margin-top: 14rpx; }
+@media (max-width: 340px) { .franchise-page { padding-left: 24rpx; padding-right: 24rpx; } }

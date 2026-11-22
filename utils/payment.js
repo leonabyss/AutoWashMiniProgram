@@ -71,7 +71,7 @@ function confirmAfterPayment(payOrderNo) {
 
   return confirmPayment(payOrderNo)
     .then((result) => {
-      if (result && result.confirmed === false && !isPaymentSuccess(result)) {
+      if (!result || result.confirmed === false || !isPaymentSuccess(result)) {
         wx.showToast({
           title: '支付确认中',
           icon: 'none'
@@ -91,7 +91,7 @@ function confirmAfterPayment(payOrderNo) {
 }
 
 function isConfirmPending(confirmResult, payOrderNo) {
-  if (!payOrderNo) return false
+  if (!payOrderNo) return true
   if (!confirmResult) return true
   if (confirmResult.confirmed === false) return true
 
@@ -111,7 +111,8 @@ function requestPayment(wxPayParams, paymentSource) {
 
   const payParams = normalizeWxPayParams(wxPayParams)
 
-  if (!payParams) return Promise.resolve()
+  if (!payParams) return Promise.reject(new Error('缺少支付参数，尚未完成支付'))
+  if (!payOrderNo) return Promise.reject(new Error('缺少支付单号，暂时无法确认支付结果'))
 
   const missingKey = ['timeStamp', 'nonceStr', 'package', 'signType', 'paySign'].find((key) => !payParams[key])
   if (missingKey) {
@@ -143,6 +144,7 @@ module.exports = {
   getPayment,
   getPayOrderNo,
   isConfirmPending,
+  isPaymentSuccess,
   normalizeWxPayParams,
   requestPayment
 }

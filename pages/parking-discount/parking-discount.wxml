@@ -1,0 +1,18 @@
+<maintenance-notice />
+<view class="parking-page">
+  <view class="parking-heading">
+    <image src="/assets/icons/lucide-qr-code.svg" mode="aspectFit" />
+    <text class="parking-title">洗车停车优惠</text>
+    <text class="parking-status">{{loading ? '正在查询' : statusText}}</text>
+  </view>
+  <view class="parking-content">
+    <text wx:if="{{couponName}}" class="coupon-name">{{couponName}}</text>
+    <image wx:if="{{qrPath && !loading}}" class="coupon-qr" src="{{qrPath}}" mode="aspectFit" show-menu-by-longpress="{{false}}" />
+    <text class="parking-message">{{message}}</text>
+    <text wx:if="{{validTo}}" class="parking-date">有效期至 {{validTo}}</text>
+    <text wx:if="{{error}}" class="parking-error">{{error}}</text>
+    <button wx:if="{{canClaim}}" class="parking-primary" loading="{{submitting}}" disabled="{{loading || submitting}}" bindtap="claim">领取停车优惠</button>
+    <button wx:else class="parking-refresh" loading="{{loading || submitting}}" disabled="{{loading || submitting}}" bindtap="load">刷新优惠状态</button>
+  </view>
+  <view class="parking-order"><text>洗车订单</text><text>{{orderNo || '未选择'}}</text></view>
+</view>

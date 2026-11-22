@@ -1,8 +1,11 @@
 const { API_BASE_URL, STORAGE_KEYS } = require('./config')
 const { chineseText } = require('./display-text')
+const maintenance = require('./system-maintenance')
 
 let refreshingPromise = null
 let loginPromise = null
+let recoveryPromise = null
+let sessionVersion = 0
 
 function getAccessToken() {
   return wx.getStorageSync(STORAGE_KEYS.accessToken)
@@ -26,6 +29,7 @@ function setSession(session) {
 }
 
 function clearSession() {
+  sessionVersion += 1
   wx.removeStorageSync('reviewOrderRegistry')
   wx.removeStorageSync('reviewScanInfo')
   wx.removeStorageSync('reviewMineSummary')
@@ -56,15 +60,16 @@ function wxLogin() {
         if (code) {
           resolve(code)
         } else {
-          reject(new Error('微信登录失败：未获取到登录凭证'))
+          reject(new Error('登录失败：未获取到登录凭证'))
         }
       },
-      fail: () => reject(new Error('微信登录失败，请稍后重试'))
+      fail: () => reject(new Error('登录失败，请稍后重试'))
     })
   })
 }
 
 function request(options) {
+  const version = sessionVersion
   const token = getAccessToken()
   const header = Object.assign(
     {
@@ -84,7 +89,12 @@ function request(options) {
       data: options.data || {},
       header,
       success: (res) => {
+        if (options.auth !== false && version !== sessionVersion) {
+          reject(createAuthRequiredError())
+          return
+        }
         const body = res.data
+        maintenance.handleResponse(body)
 
         if (res.statusCode === 401 || (body && body.code === 'UNAUTHORIZED')) {
           reject(Object.assign(new Error('登录已过期'), { code: 'UNAUTHORIZED', response: body }))
@@ -92,7 +102,9 @@ function request(options) {
         }
 
         if (res.statusCode < 200 || res.statusCode >= 300) {
-          reject(Object.assign(new Error((body && body.message) || `接口请求失败(${res.statusCode})`), {
+          const reason = [body?.message, body?.detail].find(value => typeof value === 'string' && /[\u3400-\u9fff]/.test(value))
+          const fallback = res.statusCode === 400 ? '请求参数不正确，请检查后重试' : `接口请求失败（HTTP ${res.statusCode}）`
+          reject(Object.assign(new Error(reason || fallback), {
             code: body && body.code,
             response: body,
             statusCode: res.statusCode
@@ -104,7 +116,7 @@ function request(options) {
           if (body.success) {
             resolve(body.data)
           } else {
-            reject(Object.assign(new Error(body.message || '接口请求失败'), {
+            reject(Object.assign(new Error(typeof body.message === 'string' && /[\u3400-\u9fff]/.test(body.message) ? body.message : '接口请求失败，请稍后重试'), {
               code: body.code,
               response: body
             }))
@@ -115,11 +127,13 @@ function request(options) {
         resolve(body)
       },
       fail: (err) => {
-        reject(Object.assign(new Error(err.errMsg || '网络请求失败'), err, { code: 'NETWORK_ERROR' }))
+        reject(Object.assign(new Error('网络请求失败，请检查网络后重试'), err, { code: 'NETWORK_ERROR' }))
       }
     })
   }).catch((err) => {
+    if (options.auth !== false && version !== sessionVersion) throw createAuthRequiredError()
     err.message = chineseText(err.message, '操作失败，请稍后重试')
+    if (options.auth !== false && options._retried && err.code === 'UNAUTHORIZED') clearSession()
     if (options.auth === false || options._retried || err.code !== 'UNAUTHORIZED') {
       throw err
     }
@@ -130,6 +144,7 @@ function request(options) {
 
 function login(payload) {
   if (loginPromise) return loginPromise
+  const version = sessionVersion
 
   loginPromise = wxLogin()
     .then((code) => request({
@@ -139,6 +154,7 @@ function login(payload) {
       data: Object.assign({ code }, payload || {})
     }))
     .then((session) => {
+      if (version !== sessionVersion) throw createAuthRequiredError()
       setSession(session)
       return session
     })
@@ -150,11 +166,24 @@ function login(payload) {
 }
 
 function refreshOrLogin() {
-  return refreshSession().catch(() => login())
+  if (!hasStoredSession()) return Promise.reject(createAuthRequiredError())
+  if (recoveryPromise) return recoveryPromise
+  const version = sessionVersion
+  const pending = refreshSession().catch((err) => {
+    if (version !== sessionVersion) throw createAuthRequiredError()
+    if (err.code !== 'UNAUTHORIZED' && err.code !== 'AUTH_REQUIRED') throw err
+    return login()
+  }).catch((err) => {
+    if (version === sessionVersion && (err.code === 'UNAUTHORIZED' || err.code === 'AUTH_REQUIRED')) clearSession()
+    throw err
+  }).finally(() => { if (recoveryPromise === pending) recoveryPromise = null })
+  recoveryPromise = pending
+  return pending
 }
 
 function refreshSession() {
   if (refreshingPromise) return refreshingPromise
+  const version = sessionVersion
 
   const refreshToken = wx.getStorageSync(STORAGE_KEYS.refreshToken)
 
@@ -169,12 +198,9 @@ function refreshSession() {
     data: { refreshToken }
   })
     .then((session) => {
+      if (version !== sessionVersion) throw createAuthRequiredError()
       setSession(session)
       return session
-    })
-    .catch((err) => {
-      clearSession()
-      throw err
     })
     .finally(() => {
       refreshingPromise = null
@@ -184,6 +210,7 @@ function refreshSession() {
 }
 
 function restoreSession() {
+  if (!hasStoredSession()) return Promise.reject(createAuthRequiredError())
   const token = getAccessToken()
   const expireAt = Number(wx.getStorageSync(STORAGE_KEYS.tokenExpireAt) || 0)
 
@@ -191,19 +218,12 @@ function restoreSession() {
     return Promise.resolve(wx.getStorageSync(STORAGE_KEYS.user))
   }
 
-  return refreshSession()
+  return refreshOrLogin()
     .then((session) => session.user || wx.getStorageSync(STORAGE_KEYS.user))
 }
 
 function ensureLogin() {
-  const token = getAccessToken()
-  const expireAt = Number(wx.getStorageSync(STORAGE_KEYS.tokenExpireAt) || 0)
-
-  if (token && expireAt && expireAt - Date.now() > 60000) {
-    return Promise.resolve(wx.getStorageSync(STORAGE_KEYS.user))
-  }
-
-  return refreshOrLogin().then((session) => session.user || wx.getStorageSync(STORAGE_KEYS.user))
+  return restoreSession()
 }
 
 module.exports = {

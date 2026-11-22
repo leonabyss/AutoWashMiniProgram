@@ -1,3 +1,4 @@
+<maintenance-notice />
 <view
   class="mine-page {{isPulling ? 'pulling' : ''}} {{reviewMode ? 'review-flow-mode' : ''}}"
   bindtouchstart="handleTouchStart"
@@ -51,8 +52,6 @@
       wx:for="{{menus}}"
       wx:key="title"
       class="weui-cell weui-cell_access menu-row"
-      open-type="{{item.action === 'contact' ? 'contact' : ''}}"
-      session-from="{{item.action === 'contact' ? 'mine_platform_support' : ''}}"
       data-url="{{item.url}}"
       data-action="{{item.action}}"
       bindtap="handleMenuTap"
@@ -126,7 +125,7 @@
 
   <phone-auth
     visible="{{phoneAuthVisible}}"
-    title="微信手机号登录"
+    title="手机号快捷登录"
     desc="进入我的页面前需要授权手机号，用于展示会员、余额、卡券和订单。"
     bindsuccess="onPhoneAuthSuccess"
     bindcancel="onPhoneAuthCancel"

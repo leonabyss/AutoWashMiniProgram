@@ -1,3 +1,4 @@
+<maintenance-notice />
 <view class="scan-page {{reviewMode ? 'review-scan-mode' : ''}}">
   <include src="../../components/review-notice/review-notice.wxml" />
   <view wx:if="{{!canScan && !phoneAuthVisible}}" class="scan-loading">
@@ -87,7 +88,7 @@
 
   <phone-auth
     visible="{{phoneAuthVisible}}"
-    title="微信手机号登录"
+    title="手机号快捷登录"
     desc="扫码洗车前需要授权手机号，用于识别会员、余额和当前订单。"
     bindsuccess="onPhoneAuthSuccess"
     bindcancel="onPhoneAuthCancel"

@@ -2,6 +2,7 @@ const api = require('../../utils/api')
 const { STORAGE_KEYS } = require('../../utils/config')
 const { centToYuan, secToText } = require('../../utils/format')
 const { isReviewOrder } = require('../../utils/review-mode')
+const { backendWorkSeconds } = require('../../utils/wash-duration')
 
 const FINISH_POLL_MS = 3000
 
@@ -10,7 +11,8 @@ function payMethodText(method) {
     wechat: '微信支付',
     wallet: '余额支付',
     member_card: '洗车卡',
-    coupon: '洗车券'
+    coupon: '洗车券',
+    douyin: '抖音核销'
   }
 
   return map[String(method || '').toLowerCase()] || '结算方式待确认'
@@ -64,6 +66,14 @@ function buildSettlementDisplay(payMethod, payment, card, wallet, coupons, cost,
   const cardName = (card && card.name) || (payment && payment.cardName) || ''
   const walletBalanceCent = pickNestedNumber([wallet], ['balanceCent'])
   const amountPrefix = cost === '--' ? '' : '¥'
+
+  if (method === 'douyin') {
+    return {
+      payMethodText: '抖音核销',
+      settlementSummary: { label: '账户扣费', prefix: '¥', value: '0.00', unit: '', tone: 'blue' },
+      remainingSummary: { label: '结算方式', prefix: '', value: '抖音团购', unit: '', tone: 'green', icon: '/assets/icons/lucide-circle-check-blue.svg' }
+    }
+  }
 
   if (method === 'wallet') {
     return {
@@ -216,13 +226,7 @@ function pickNestedNumber(sources, keys) {
 }
 
 function getDurationSec(order, status) {
-  return pickNestedNumber([status, order], [
-    'washDurationSec',
-    'usedDurationSec',
-    'machineStartSec',
-    'durationSec',
-    'totalDurationSec'
-  ]) || 0
+  return backendWorkSeconds(status, order)
 }
 
 function getAmountUsedCent(order, status) {
@@ -392,10 +396,11 @@ Page({
   loadOrderDetail(orderNo, silent) {
     if (this.data.reviewMode) {
       return api.wash.status(orderNo).then((order) => {
-        const resolved = order.washStatus === 'finished'
+        const seconds = backendWorkSeconds(order)
+        const resolved = order.washStatus === 'finished' && seconds !== null
         this.setData({
-          seconds: order.washDurationSec,
-          displayTime: secToText(order.washDurationSec),
+          seconds,
+          displayTime: seconds === null ? '--' : secToText(seconds),
           cost: centToYuan(order.amountCent), remain: centToYuan(order.balanceCent),
           siteName: order.siteName, machineName: order.machineName,
           payMethodText: '虚拟体验余额',
@@ -426,7 +431,7 @@ Page({
         const machine = (status && status.machine) || {}
         const payment = (status && status.device && status.device.payment) || (status && status.payment) || {}
         const resolvedCost = amountUsedCent === null ? this.data.cost : centToYuan(amountUsedCent)
-        const resolvedTime = secToText(seconds)
+        const resolvedTime = seconds === null ? '--' : secToText(seconds)
         const resolvedPayMethod = (order && order.payMethod) || source.payMethod || payment.payMethod
 
         return Promise.all([
@@ -438,7 +443,7 @@ Page({
           const washStatus = String((status && status.washStatus) || (order && order.washStatus) || '').toLowerCase()
           const orderStatus = String((status && status.orderStatus) || (order && order.orderStatus) || '').toLowerCase()
           const terminalStatuses = ['finished', 'completed', 'abnormal', 'failed', 'canceled', 'cancelled', 'closed', 'refunded']
-          const settlementResolved = terminalStatuses.indexOf(washStatus) >= 0 || terminalStatuses.indexOf(orderStatus) >= 0
+          const settlementResolved = seconds !== null && (terminalStatuses.indexOf(washStatus) >= 0 || terminalStatuses.indexOf(orderStatus) >= 0)
           const display = buildSettlementDisplay(
             resolvedPayMethod,
             payment,
@@ -494,7 +499,7 @@ Page({
   },
 
   backHome() {
-    wx.reLaunch({
+    wx.switchTab({
       url: '/pages/home/home'
     })
   },
@@ -603,6 +608,11 @@ Page({
         wx.hideLoading()
         this.setData({ reporting: false })
       })
+  },
+
+  openParkingDiscount() {
+    if (!this.data.orderNo) { wx.showToast({ title: '请先确认洗车订单', icon: 'none' }); return }
+    wx.navigateTo({ url: '/pages/parking-discount/parking-discount?orderNo=' + encodeURIComponent(this.data.orderNo) })
   },
 
   recordFaultReport(report) {

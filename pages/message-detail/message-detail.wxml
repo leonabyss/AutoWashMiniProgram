@@ -1,3 +1,4 @@
+<maintenance-notice />
 <view class="detail-page">
   <view wx:if="{{message}}" class="detail-card">
     <view class="category">{{message.category}}</view>
